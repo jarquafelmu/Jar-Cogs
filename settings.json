@@ -1,0 +1,11 @@
+{
+    "0" : {
+        "GLOBAL" : {
+            "token" : "NTAzMDI0MDMyMDQwNDg0ODY0.Dr_FVg.ftR8g2y7drDZdzrtizgUIRrgFEE",
+            "prefix" : [
+                "?"
+            ],
+            "enable_sentry" : true
+        }
+    }
+}
