@@ -1,0 +1,17 @@
+For some reason, using discord.py and python 3 when I am trying to compare :pen_ballpoint: (🖊️) or :pencil: (✏️) with themselves, I am getting a Fals. But if I compare :thumbsup: (👍) against itself then it works? I am getting my emoji from [emojipedia][1].
+
+This is the results of my testing
+
+    Expected :thumbsup:. Received :thumbsup:. Equal? True
+    (Expected 👍. Received 👍. Equal? True)
+    
+    Expected :pencil2:️. Received :pencil2:. Equal? False
+    (Expected ✏️. Received ✏️. Equal? False)
+    
+    Expected :pen_ballpoint:️. Received :pen_ballpoint:. Equal? False
+    (Expected 🖊️. Received 🖊️. Equal? False)
+
+Based on how the emoji look when in the discord app, it appears that they are using the Twitter unicode set. Is there something I'm doing wrong or something that I am not understanding about how emoji comparison works?
+
+
+  [1]: https://emojipedia.org
