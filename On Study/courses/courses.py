@@ -657,6 +657,7 @@ class Courses(commands.Cog):
         """
         # get the member from the guild using the user_id in the payload
         member = self.guild.get_member(payload.user_id)
+        log.debug(f"user_id: {payload.user_id}")
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
         pass
 
