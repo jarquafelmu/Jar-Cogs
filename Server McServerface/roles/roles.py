@@ -69,8 +69,8 @@ class RoleManager(commands.Cog):
         """
         Handles the rule agreement reaction
         """        
-        
-        if emoji.startswith("\N{THUMBS UP SIGN}"):        
+
+        if emoji.startswith("\N{THUMBS UP SIGN}"):
             if add:
                 msg = (
                     f"Thank you for agreeing to the rules for {member.guild.name}.\n"
@@ -84,18 +84,16 @@ class RoleManager(commands.Cog):
                     "If you decide to agree to the rules in the future, your access will be restored."
                 )
                 await member.remove_roles(self.roles["reader"]["obj"])
-            
+
             with contextlib.suppress(discord.HTTPException):
                 # we don't want blocked DMs preventing the function working
                 await member.send(msg)
-            
-        
-                
+
     async def process_author_reaction(self, member: discord.Member, emoji: str, add: bool):
         """
         Handles the rule agreement reaction
         """
-        
+
         if emoji.startswith("\N{LOWER LEFT BALLPOINT PEN}"):
             if add:
                 await member.add_roles(self.roles["author"]["obj"])
