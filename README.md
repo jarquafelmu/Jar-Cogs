@@ -13,12 +13,14 @@ These cogs are run by the [Red - Discord Bot framework](https://red-discordbot.r
 
 [Documentation](https://red-discordbot.readthedocs.io/en/v3-develop/index.html)
 
-Current bot version: 3.0.0rc2
+Current bot version: 3.0.0
 
 ## Discord
 We use Discord.py in order to interact with Discord.
 
 [Documentation](https://discordpy.readthedocs.io/en/rewrite/api.html#)
+
+Version: 1.0.0a
 
 ## Python
 Version: 3.7.1
