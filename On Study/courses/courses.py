@@ -671,5 +671,5 @@ class Courses(commands.Cog):
         else:
             await member.remove_roles(role)
             action = "removed"
-        log.debug(f"{action} role: {role.name} to member: {member.name}")
+        self.debug(msg=f"{action} role: {role.name} to member: {member.name}", channel=self.log)
         pass
