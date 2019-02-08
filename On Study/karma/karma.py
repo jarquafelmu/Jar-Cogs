@@ -1,6 +1,7 @@
 from redbot.core import Config, commands, checks
-from redbot.core.utils.chat_formatting import error
+from redbot.core.utils.chat_formatting import error, info, warning
 from redbot.core.utils.predicates import MessagePredicate
+from enum import Enum
 
 import discord
 import logging
@@ -37,17 +38,32 @@ else:
     print('added handler for the first time')
 
 
+class LogType(Enum):
+    DEBUG = 0
+    INFO = 1
+    WARNING = 2
+    ERROR = 4
+
+
 class Karma(commands.Cog):
     """
     Handles functions regarding karma
     """
     thumbs_up_emoji = "\N{Thumbs Up Sign}"
+    log_type = {}
     properties = {
-        "guild": None
+        "guild": None,
+        "log_channel": None
     }
-    attr_names = {
-        "thanked": "been_thanked",
-        "thanking": "thanked_others"
+    karma_roles = {
+        "thanked": {
+            "name": "been_thanked",
+            "id": 543540754702794772
+        },
+        "thanking": {
+            "name": "thanked_others",
+            "id": 543540865789067265
+        }
     }
 
     def __init__(self, bot):
@@ -55,7 +71,11 @@ class Karma(commands.Cog):
         self.bot = bot
         self.db = Config.get_conf(self, identifier=1742113358,
                                   force_registration=True)
-
+        default_guild = {
+            "settings": {
+                "logging_channel_id": None
+            }
+        }
         default_member = {
             "been_thanked": {
                 "total": 0,
@@ -68,6 +88,7 @@ class Karma(commands.Cog):
         }
 
         self.db.register_member(**default_member)
+        self.db.register_guild(**default_guild)
 
     @commands.group(name="karma", aliases=["k", "Karma"])
     async def _karma(self, ctx):
@@ -88,10 +109,10 @@ class Karma(commands.Cog):
             )
 
         try:
-            been_thanked = build_field(
+            been_thanked_val = build_field(
                 await self.db.member(member).been_thanked()
             )
-            thanked_others = build_field(
+            thanked_others_val = build_field(
                 await self.db.member(member).thanked_others()
             )
         except KeyError:
@@ -101,21 +122,57 @@ class Karma(commands.Cog):
             embed = discord.Embed(color=0xEE2222,
                                   title=f"{member.name}'s karma")
             embed.add_field(name="Thanked by others",
-                            value=been_thanked,
+                            value=been_thanked_val,
                             inline=False)
             embed.add_field(name="Thanked others",
-                            value=thanked_others,
+                            value=thanked_others_val,
                             inline=False)
             await ctx.send(embed=embed)
 
             log.info(
                 "{\n"
                 f"  member: {member.name}\n"
-                f"  been_thanked: {been_thanked}\n"
-                f"  thanked_others: {thanked_others}"
+                f"  {self.karma_roles['thanked']['name']}: {been_thanked_val}\n"
+                f"  {self.karma_roles['thanking']['name']}: {thanked_others_val}"
                 "\n}"
             )
         pass
+
+    async def log(self, ctx, *, msg: str, log_type: LogType = LogType.DEBUG):
+        """
+        Logs to the configured logging channel if possible.
+
+        Otherwise, warns the user in channel the command
+        was sent that the logging channel as not been set yet.
+        """
+        if not msg.strip():
+            return
+
+        channel_log = self.properties["log_channel"]
+
+        # try to get the log channel if it exists in the config database for this server
+        if channel_log is None:
+            logging_channel_id = self.db.guild(ctx.guild).settings["logging_channel_id"]
+            if logging_channel_id is None:
+                msg = f"Logging channel is not set for guild {ctx.guild.id}"
+                log.error(msg)
+                await ctx.send(error(msg))
+            else:
+                self.properties["log_channel"] = channel_log = self.bot.get_channel(logging_channel_id)
+
+        if log_type == LogType.DEBUG:
+            log.debug(msg)
+        elif log_type == LogType.INFO:
+            log.info(msg)
+            msg = info(msg)
+        elif log_type == LogType.WARNING:
+            log.warn(msg)
+            msg = warning(msg)
+        elif log_type == LogType.ERROR:
+            log.error(msg)
+            msg = error(msg)
+
+        await channel_log.send(msg)
 
     @_karma.group(name="settings", aliases=["s", "set"])
     @checks.admin()
@@ -139,6 +196,20 @@ class Karma(commands.Cog):
         if await self.confirm(ctx, msg=msg):
             await self.db.clear_all_members(ctx.guild)
         await ctx.send("Done.")
+        pass
+
+    @_karma_settings.command(name="log")
+    @checks.admin()
+    async def _karma_settings_log_channel(self, ctx, logging_channel_id: int):
+        """
+        Sets which channel should be used on this server for logging purposes.
+        """
+        channel_log = self.bot.get_channel(logging_channel_id)
+
+        if channel_log is None:
+            self.log(ctx, msg="No channel found", log_type=LogType.WARNING)
+
+        self.properties["log_channel"] = channel_log
         pass
 
     async def confirm(self, ctx, *, msg="Are you sure?"):
@@ -212,11 +283,11 @@ class Karma(commands.Cog):
         Adds a karma point to both users
         """
         await self.update_karma_category(member_giving,
-                                         self.attr_names["thanking"],
+                                         self.karma_roles["thanking"]["name"],
                                          modifier)
 
         await self.update_karma_category(member_receiving,
-                                         self.attr_names["thanked"],
+                                         self.karma_roles["thanked"]["name"],
                                          modifier)
         pass
 
