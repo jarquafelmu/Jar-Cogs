@@ -1,48 +1,7 @@
 from redbot.core import Config, commands, checks
-from redbot.core.utils.chat_formatting import error, info, warning
 from redbot.core.utils.predicates import MessagePredicate
-from enum import Enum
-
+from .logger import Logger, LogLevel
 import discord
-import logging
-
-# create log with 'spam_application'
-log = logging.getLogger("karma.py")
-log.setLevel(logging.DEBUG)
-
-# create formatter and add it to the handlers
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s::%(funcName)s::%(lineno)d"
-    "- %(levelname)s - %(message)s"
-)
-
-# create console handler
-consoleHandler = logging.StreamHandler()
-consoleHandler.setLevel(logging.DEBUG)
-consoleHandler.setFormatter(formatter)
-
-# add the handlers to the log
-print('adding handler-')
-# allows to add only one instance of file handler and stream handler
-if log.handlers:
-    print('making sure we do not add duplicate handlers')
-    for handler in log.handlers:
-        # add the handlers to the log
-        # makes sure no duplicate handlers are added
-
-        if not isinstance(handler, logging.StreamHandler):
-            log.addHandler(consoleHandler)
-            print('added stream handler')
-else:
-    log.addHandler(consoleHandler)
-    print('added handler for the first time')
-
-
-class LogType(Enum):
-    DEBUG = 0
-    INFO = 1
-    WARNING = 2
-    ERROR = 4
 
 
 class Karma(commands.Cog):
@@ -50,10 +9,8 @@ class Karma(commands.Cog):
     Handles functions regarding karma
     """
     thumbs_up_emoji = "\N{Thumbs Up Sign}"
-    log_type = {}
     properties = {
-        "guild": None,
-        "log_channel": None
+        "guild": None
     }
     karma_roles = {
         "thanked": {
@@ -71,11 +28,6 @@ class Karma(commands.Cog):
         self.bot = bot
         self.db = Config.get_conf(self, identifier=1742113358,
                                   force_registration=True)
-        default_guild = {
-            "settings": {
-                "logging_channel_id": None
-            }
-        }
         default_member = {
             "been_thanked": {
                 "total": 0,
@@ -88,7 +40,6 @@ class Karma(commands.Cog):
         }
 
         self.db.register_member(**default_member)
-        self.db.register_guild(**default_guild)
 
     @commands.group(name="karma", aliases=["k", "Karma"])
     async def _karma(self, ctx):
@@ -115,9 +66,8 @@ class Karma(commands.Cog):
             thanked_others_val = build_field(
                 await self.db.member(member).thanked_others()
             )
-        except KeyError:
-            log.exception("Exception occured.")
-            await ctx.send(error("Member not found."))
+        except KeyError as e:
+            Logger.log("Exception occured.", level=LogLevel.ERROR, esc_info=e)
         else:
             embed = discord.Embed(color=0xEE2222,
                                   title=f"{member.name}'s karma")
@@ -129,50 +79,15 @@ class Karma(commands.Cog):
                             inline=False)
             await ctx.send(embed=embed)
 
-            log.info(
+            Logger.log(
                 "{\n"
                 f"  member: {member.name}\n"
                 f"  {self.karma_roles['thanked']['name']}: {been_thanked_val}\n"
                 f"  {self.karma_roles['thanking']['name']}: {thanked_others_val}"
-                "\n}"
+                "\n}",
+                level=LogLevel.INFO
             )
         pass
-
-    async def log(self, ctx, *, msg: str, log_type: LogType = LogType.DEBUG):
-        """
-        Logs to the configured logging channel if possible.
-
-        Otherwise, warns the user in channel the command
-        was sent that the logging channel as not been set yet.
-        """
-        if not msg.strip():
-            return
-
-        channel_log = self.properties["log_channel"]
-
-        # try to get the log channel if it exists in the config database for this server
-        if channel_log is None:
-            logging_channel_id = self.db.guild(ctx.guild).settings["logging_channel_id"]
-            if logging_channel_id is None:
-                msg = f"Logging channel is not set for guild {ctx.guild.id}"
-                log.error(msg)
-                await ctx.send(error(msg))
-            else:
-                self.properties["log_channel"] = channel_log = self.bot.get_channel(logging_channel_id)
-
-        if log_type == LogType.DEBUG:
-            log.debug(msg)
-        elif log_type == LogType.INFO:
-            log.info(msg)
-            msg = info(msg)
-        elif log_type == LogType.WARNING:
-            log.warn(msg)
-            msg = warning(msg)
-        elif log_type == LogType.ERROR:
-            log.error(msg)
-            msg = error(msg)
-
-        await channel_log.send(msg)
 
     @_karma.group(name="settings", aliases=["s", "set"])
     @checks.admin()
@@ -207,7 +122,7 @@ class Karma(commands.Cog):
         channel_log = self.bot.get_channel(logging_channel_id)
 
         if channel_log is None:
-            self.log(ctx, msg="No channel found", log_type=LogType.WARNING)
+            Logger.log("No channel found", level=LogLevel.WARNING)
 
         self.properties["log_channel"] = channel_log
         pass
@@ -260,19 +175,20 @@ class Karma(commands.Cog):
         member_receiving = message.author
 
         if member_giving.id == member_receiving.id:
-            return log.debug("member cannot give themselves karma.")
+            return Logger.log("member cannot give themselves karma.")
 
         if member_receiving.bot:
-            return log.debug("bot may not receive karma.")
+            return Logger.log("bot may not receive karma.")
 
         modifier = 1 if is_add_action else -1
 
-        log.debug(
+        Logger.log(
             f"{member_giving.name} "
             f"{'gave a' if modifier == 1 else 'removed their'}"
             f" karma "
             f"{'to' if modifier == 1 else 'from'}"
-            f" {member_receiving.name}"
+            f" {member_receiving.name}",
+            guild=self.properties["guild"]
         )
 
         await self.modify_karma(member_giving, member_receiving, modifier)
@@ -316,5 +232,5 @@ class Karma(commands.Cog):
 
             await self.db.member(member).set_raw(category_id,
                                                  value=thank_category)
-        except KeyError:
-            log.exception("Exception occured.")
+        except KeyError as e:
+            Logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)

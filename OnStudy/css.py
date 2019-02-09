@@ -1,7 +1,6 @@
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
-
 import discord
 
 
@@ -21,24 +20,24 @@ class CSS(commands.Cog):
             "ref": None
         }
     }
-    
+
     def __init__(self, bot):
         """Initialization function"""
         self.bot = bot
         self.guild = self.bot.get_guild(self.guild_id)
         self.channels = self.Channels(bot)
-        
-        self.utility_roles["admin"]["ref"] = self.guild.get_role(self.utility_roles["admin"]["id"])        
+
+        self.utility_roles["admin"]["ref"] = self.guild.get_role(self.utility_roles["admin"]["id"])
         self.utility_roles["staff"]["ref"] = self.guild.get_role(self.utility_roles["staff"]["id"])
 
     class Channels:
         """
         Enum for channels to make it simplier to access them when needed
         """
-        
+
         def __init__(self, bot):
             self.bot = bot
-            
+
         course_list_id = 514518408122073116
         log_id = 485218362272645120
         new_members_id = 484378858968055814
@@ -76,26 +75,28 @@ class CSS(commands.Cog):
             return f"<#{channel}>"
 
     def getRoleList(self, user: discord.Member = None):
-        """Gets a list of the roles assigned to the user, 
-        omitting the '@everyone' role"""
-        
+        """
+        Gets a list of the roles assigned to the user,
+        omitting the '@everyone' role
+        """
+
         if user is None:
             return []
 
         return [role.name for role in user.roles if role.name != "@everyone"]
-        
+
     async def confirm(self, ctx, *, msg="Are you sure?"):
         """
         Handles confirmations for commands.
-        
+
         Optionally can supply a message that is displayed to the user. Defaults to 'Are you sure?'.
         """
-        
+
         await ctx.channel.send(f"{msg}")
         pred = MessagePredicate.yes_or_no(ctx)
         await self.bot.wait_for("message", check=pred)
         return pred.result
-    
+
     async def pastGreet(self, ctx=None):
         """
         Greets members that joined the server while the bot was unavailable
@@ -128,7 +129,7 @@ class CSS(commands.Cog):
         members = [message.author for message in recentlyJoinedMembers]
 
         #  for message in recentlyJoinedMembers:
-        await self.welcome(self.channels.newMembers, members)        
+        await self.welcome(self.channels.newMembers, members)
         pass
 
     async def prodMember(self, ctx, user: discord.Member = None):
@@ -149,7 +150,7 @@ class CSS(commands.Cog):
             f"Instead visit server and grab your courses in the **#{self.channels.courseList.name}** channel. Hope to see you soon."
         )
 
-        await log.send(f"Prodded **{user.display_name}** as requested.")        
+        await log.send(f"Prodded **{user.display_name}** as requested.")
         pass
 
     async def welcome(self, channel=None, members=None):
@@ -175,7 +176,7 @@ class CSS(commands.Cog):
 
         await channel.send(
             f"Welcome {humanize_list(mentionList)}! Check out the {self.channels.anchor(self.channels.welcome_id)} channel for some information about the server."
-        )        
+        )
         pass
 
     # user commands
@@ -189,7 +190,7 @@ class CSS(commands.Cog):
             user = ctx.author
 
         await self.welcome(ctx, user)
-        
+
         await ctx.channel.send("Done.")
         pass
 
@@ -205,7 +206,7 @@ class CSS(commands.Cog):
 
         # single user
         await self.prodMember(ctx, user)
-        
+
         await ctx.channel.send("Done.")
         pass
 
@@ -230,7 +231,7 @@ class CSS(commands.Cog):
                 return await ctx.send("All members are have courses.")
 
             await ctx.send(f"Prodding {size} member{'s' if size > 1 or size == 0 else ''}.")
-            
+
             async with log.typing():
                 for member in membersWithoutRoles:
                     await self.prodMember(ctx, member)
@@ -240,7 +241,7 @@ class CSS(commands.Cog):
 
             await ctx.send(f"Finished.")
         else:
-            return await ctx.send("Standing down.")        
+            return await ctx.send("Standing down.")
         pass
 
     # custom events
@@ -262,7 +263,7 @@ class CSS(commands.Cog):
         if member.guild.id != self.guild.id:
             return
 
-        await self.welcome(self.channels.newMembers, member)        
+        await self.welcome(self.channels.newMembers, member)
         pass
 
     async def on_member_remove(self, member):
@@ -272,6 +273,6 @@ class CSS(commands.Cog):
         # we only want to announce if this is the right server
         if member.guild.id != self.guild.id:
             return
-        
-        await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} has left the building.")        
+
+        await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} has left the building.")
         pass

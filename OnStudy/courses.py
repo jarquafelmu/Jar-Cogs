@@ -1,41 +1,10 @@
 from redbot.core import commands, Config, checks
-from redbot.core.utils.chat_formatting import error, info, warning
+from redbot.core.utils.chat_formatting import error
 from redbot.core.utils.predicates import MessagePredicate
+from .logger import Logger, LogLevel
 import discord
 import re
-import logging
 import random
-
-# create logger with 'spam_application'
-log = logging.getLogger("courses.py")
-log.setLevel(logging.DEBUG)
-
-# create formatter and add it to the handlers
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s::%(funcName)s::%(lineno)d"
-    "- %(levelname)s - %(message)s"
-)
-
-# create console handler
-consoleHandler = logging.StreamHandler()
-consoleHandler.setLevel(logging.DEBUG)
-consoleHandler.setFormatter(formatter)
-
-# add the handlers to the logger
-print('adding handler-')
-# allows to add only one instance of file handler and stream handler
-if log.handlers:
-    print('making sure we do not add duplicate handlers')
-    for handler in log.handlers:
-        # add the handlers to the logger
-        # makes sure no duplicate handlers are added
-
-        if not isinstance(handler, logging.StreamHandler):
-            log.addHandler(consoleHandler)
-            print('added stream handler')
-else:
-    log.addHandler(consoleHandler)
-    print('added handler for the first time')
 
 
 class Courses(commands.Cog):
@@ -55,7 +24,6 @@ class Courses(commands.Cog):
         self.bot = bot
         self.guild = self.bot.get_guild(self.guild_id)
         self.db = Config.get_conf(self, identifier=8748107325)
-        self.log = self.bot.get_channel(485218362272645120)
         self.course_list = self.bot.get_channel(514518408122073116)
         self.emoji = "\N{WHITE HEAVY CHECK MARK}"
         self.utility_roles["staff"]["ref"] = self.guild.get_role(
@@ -68,38 +36,6 @@ class Courses(commands.Cog):
 
         self.db.register_guild(**default_guild)
         pass
-
-    async def debug(self, *, msg: str, channel):
-        """
-        Combines logging to the logger and to the discord channel
-        """
-        log.debug(msg)
-        if channel:
-            await channel.send(msg)
-
-    async def info(self, *, msg: str, channel):
-        """
-        Combines logging to the logger and to the discord channel
-        """
-        log.info(msg)
-        if channel:
-            await channel.send(info(msg))
-
-    async def warning(self, *, msg: str, channel):
-        """
-        Combines logging to the logger and to the discord channel
-        """
-        log.warning(msg)
-        if channel:
-            await channel.send(warning(msg))
-
-    async def error(self, *, msg: str, channel):
-        """
-        Combines logging to the logger and to the discord channel
-        """
-        log.error(msg)
-        if channel:
-            await channel.send(error(msg))
 
     @commands.group(name="courses")
     @checks.admin()
@@ -242,7 +178,7 @@ class Courses(commands.Cog):
         """
         category = self.guild.get_channel(category_id)
         if category is None:
-            return log.error("category is empty.")
+            return Logger.log("category is empty.", level=LogLevel.ERROR)
 
         for channel in category.channels:
             await channel.delete(reason=f"removing parent category")
@@ -256,7 +192,7 @@ class Courses(commands.Cog):
         """
         role = self.guild.get_role(role_id)
         if role is None:
-            return log.error("role is empty.")
+            return Logger.log("role is empty.", level=LogLevel.ERROR)
 
         await role.delete()
         pass
@@ -267,7 +203,7 @@ class Courses(commands.Cog):
         """
         msg = await self.course_list.get_message(msg_id)
         if msg is None:
-            return log.error("msg is empty.")
+            return Logger.log("msg is empty.", level=LogLevel.ERROR)
 
         await msg.delete()
         pass
@@ -342,18 +278,14 @@ class Courses(commands.Cog):
                 async for message in self.course_list.history():
                     await message.remove_reaction(self.emoji, member)
                 await ctx.send("Done.")
-            except discord.Forbidden:
-                log.exception("Insufficient permissions to remove reaction.")
-                self.log.send(error(f"I don't have permission for remove reactions in {self.course_list.name}."))
-            except discord.HTTPException:
-                log.exception("Removing the reaction failed.")
-                self.log.send(error("Removing the reaction failed."))
-            except discord.NotFound:
-                log.exception("The member or emoji you specified was not found.")
-                self.log.send(error("The member or emoji you specified was not found."))
-            except discord.InvalidArgument:
-                log.exception("The emoji parameter is invalid.")
-                self.log.send(error("The emoji parameter is invalid."))
+            except discord.Forbidden as e:
+                Logger.log("Insufficient permissions to remove reaction.", level=LogLevel.ERROR, exc_info=e)
+            except discord.HTTPException as e:
+                Logger.log("Removing the reaction failed.", level=LogLevel.ERROR, exc_info=e)
+            except discord.NotFound as e:
+                Logger.log("The member or emoji you specified was not found.", level=LogLevel.ERROR, exc_info=e)
+            except discord.InvalidArgument as e:
+                Logger.log("The emoji parameter is invalid.", level=LogLevel.ERROR, exc_info=e)
         pass
 
     @_courses.command(name="reset")
@@ -413,14 +345,14 @@ class Courses(commands.Cog):
                 new_position = index + start_index
                 try:
                     await category.edit(name=category.name.upper(), position=new_position)
-                except discord.InvalidArgument:
-                    log.exception(f"Invalid attempt to change the position of category {category.name} to position {new_position}")
+                except discord.InvalidArgument as e:
+                    Logger.log(f"Invalid attempt to change the position of category {category.name} to position {new_position}", level=LogLevel.ERROR, exc_info=e)
                     await ctx.send(error(f"Invalid attempt to change the position of category {category.name} to position {new_position}"))
-                except discord.Forbidden:
-                    log.exception(f"Forbidden from modifying category {category.name}")
+                except discord.Forbidden as e:
+                    Logger.log(f"Forbidden from modifying category {category.name}", level=LogLevel.ERROR, exc_info=e)
                     await ctx.send(error(f"Forbidden from modifying category {category.name}"))
-                except discord.HTTPException:
-                    log.exception(f"Failed to edit category {category.name}")
+                except discord.HTTPException as e:
+                    Logger.log(f"Failed to edit category {category.name}", level=LogLevel.ERROR, exc_info=e)
                     await ctx.send(error(f"Failed to edit category {category.name}"))
 
         await ctx.send("Done.")
@@ -444,12 +376,10 @@ class Courses(commands.Cog):
                     # syncs users with the courses they have signed up for
                     await self._courses_sync_roles(ctx, message)
                 await ctx.send("Done.")
-            except discord.Forbidden:
-                log.exception("discord.Forbidden error.")
-                self.log.send(error(f"I don't have permission for `read message history` in {self.course_list.name}."))
-            except discord.HTTPException:
-                log.exception("discord.HTTPException error.")
-                self.log.send(error(f"Message history request failed!"))
+            except discord.Forbidden as e:
+                Logger.log("discord.Forbidden error.", level=LogLevel.ERROR, exc_info=e)
+            except discord.HTTPException as e:
+                Logger.log("discord.HTTPException error.", level=LogLevel.ERROR, exc_info=e)
         pass
 
     async def _courses_sync_roles(self, ctx, message: discord.Message):
@@ -538,12 +468,12 @@ class Courses(commands.Cog):
             try:
                 # create the role in the guild
                 role_obj = await ctx.guild.create_role(name=role_name, color=color)
-            except discord.InvalidArgument:
-                log.exception("InvalidArgument")
-            except discord.Forbidden:
-                log.exception(f"Bot lacks permission to add roles to the server.")
-            except discord.HTTPException:
-                log.exception(f"Creating the role failed.")
+            except discord.InvalidArgument as e:
+                Logger.log("InvalidArgument", level=LogLevel.ERROR, exc_info=e)
+            except discord.Forbidden as e:
+                Logger.log(f"Bot lacks permission to add roles to the server.", level=LogLevel.ERROR, exc_info=e)
+            except discord.HTTPException as e:
+                Logger.log(f"Creating the role failed.", level=LogLevel.ERROR, exc_info=e)
             else:
                 await self.info(msg=f"Creating role for {role_name}.", channel=ctx)
                 return role_obj
@@ -574,14 +504,14 @@ class Courses(commands.Cog):
         try:
             # add initial reaction to the course to make it easier on users to add it
             await message.add_reaction(emoji)
-        except discord.InvalidArgument:
-            log.exception(f"Emoji was not a valid emoji.")
-        except discord.Forbidden:
-            log.exception("Forbidden action")
-        except discord.NotFound:
-            log.exception(f"The requested emoji was not found on the server.")
-        except discord.HTTPException:
-            log.exception(f"There was an issue with the webserver.")
+        except discord.InvalidArgument as e:
+            Logger.log(f"Emoji was not a valid emoji.", level=LogLevel.ERROR, exc_info=e)
+        except discord.Forbidden as e:
+            Logger.log("Forbidden action", level=LogLevel.ERROR, exc_info=e)
+        except discord.NotFound as e:
+            Logger.log(f"The requested emoji was not found on the server.", level=LogLevel.ERROR, exc_info=e)
+        except discord.HTTPException as e:
+            Logger.log(f"There was an issue with the webserver.", level=LogLevel.ERROR, exc_info=e)
         pass
 
     async def confirm(self, ctx, *, msg="Are you sure?"):
@@ -613,11 +543,11 @@ class Courses(commands.Cog):
         Handles building the required products to register a student with a course
         """
         if member is None:
-            return log.debug("member is None!")
+            return Logger.log("member is None!")
         elif member.bot:
-            return log.debug("member is bot")
+            return Logger.log("member is bot")
         elif str(emoji) != self.emoji:
-            return log.debug("incorrect emoji")
+            return Logger.log("incorrect emoji")
 
         # get the dict courses from the db
         courses = await self.db.guild(self.guild).get_raw("registered_courses")
@@ -634,7 +564,7 @@ class Courses(commands.Cog):
 
         # ensure that we actually got a course
         if course is None:
-            log.error("course is None!")
+            Logger.log("course is None!", level=LogLevel.ERROR)
             return
 
         # get the role from the guild that matches the course
@@ -657,7 +587,7 @@ class Courses(commands.Cog):
         """
         # get the member from the guild using the user_id in the payload
         member = self.guild.get_member(payload.user_id)
-        log.debug(f"user_id: {payload.user_id}")
+        Logger.log(f"user_id: {payload.user_id}")
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
         pass
 
