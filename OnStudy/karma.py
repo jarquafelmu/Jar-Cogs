@@ -113,20 +113,6 @@ class Karma(commands.Cog):
         await ctx.send("Done.")
         pass
 
-    @_karma_settings.command(name="log")
-    @checks.admin()
-    async def _karma_settings_log_channel(self, ctx, logging_channel_id: int):
-        """
-        Sets which channel should be used on this server for logging purposes.
-        """
-        channel_log = self.bot.get_channel(logging_channel_id)
-
-        if channel_log is None:
-            Logger.log("No channel found", level=LogLevel.WARNING)
-
-        self.properties["log_channel"] = channel_log
-        pass
-
     async def confirm(self, ctx, *, msg="Are you sure?"):
         """
         Handles confirmations for commands.
