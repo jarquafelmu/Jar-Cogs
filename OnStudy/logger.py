@@ -50,12 +50,17 @@ class Logger(commands.Cog):
 
     # # Guild_Id = 481613220550017036guild_id = 481613220550017036
 
-    def __init__(self, bot, p_guild_id):
+    def __init__(self, bot, p_guild_id = None):
+        """
+        If `p_guild_id` is not provided then the guild id *must* 
+        be provided at some point later before logging to the
+        server channels will work.
+        """
         self.bot = bot
         self.db = Config.get_conf(self, identifier=174211339,
                                   force_registration=True)
-        # self.properties["guild"] = self.bot.get_guild(self.guild_id)
         self.properties["guild"] = self.bot.get_guild(p_guild_id)
+
         default_guild = {
             "settings": {
                 "logging_channel_id": None
@@ -127,7 +132,8 @@ class Logger(commands.Cog):
         channel_log = self.bot.get_channel(logging_channel_id)
 
         if channel_log is None:
-            self.log(ctx, msg="No channel found", level=LogLevel.WARNING)
+            await ctx.send(warning("No channel found."))
+            self.log("No channel found", level=LogLevel.WARNING)
             return
 
         # register with database
@@ -135,27 +141,31 @@ class Logger(commands.Cog):
         settings["logging_channel_id"] = logging_channel_id
         await self.db.guild(self.properties["guild"]).settings.set(settings)
         await ctx.send("Channel registered with database.")
+        self.log("No channel found", level=LogLevel.INFO)
 
         # register locally
         self.properties["log_channel"] = channel_log
-        await ctx.send("Channel registered locally.")
+        await ctx.send(info("Channel registered locally."))
+        self.log("No channel found", level=LogLevel.INFO)
 
         # let user know success
-        await ctx.send("Channel is loaded.")
+        await ctx.send(info("Channel is loaded."))
+        self.log("No channel found", level=LogLevel.INFO)
         pass
 
-    async def log(self, msg: str, *, level: LogLevel = LogLevel.DEBUG, exc_info, p_guild = None):
+    async def log(self, msg: str = "", *, level: LogLevel = LogLevel.DEBUG, exc_info = None, guild_id = None):
         """
         Logs to the configured logging channel if possible.
 
         Otherwise, warns the user in channel the command
         was sent that the logging channel as not been set yet.
         """
+        
         guild = self.get_guild()
 
-        if guild is None and p_guild:
-            guild = p_guild
-            self.set_guild(p_guild)
+        if guild is None and guild_id:
+            guild = guild_id
+            self.set_guild(guild_id)
 
         if not msg.strip() or guild is None:
             return
@@ -173,7 +183,10 @@ class Logger(commands.Cog):
             logger.warn(msg)
             msg = warning(msg)
         elif level == LogLevel.ERROR:
-            logger.error(msg, exc_info=exc_info)
+            if exc_info is None:
+                logger.error(msg)
+            else:
+                logger.error(msg, exc_info=exc_info)
             msg = error(msg)
 
         await channel_log.send(msg)
