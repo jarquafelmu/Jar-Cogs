@@ -1,3 +1,6 @@
+# visual studio code
+*.code-workspace
+
 # google drive
 *.tmp.drivedownload*
 
