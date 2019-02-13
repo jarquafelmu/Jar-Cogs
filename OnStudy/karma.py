@@ -26,6 +26,7 @@ class Karma(commands.Cog):
     def __init__(self, bot):
         """Initialization function"""
         self.bot = bot
+        self.logger = Logger(bot)
         self.db = Config.get_conf(self, identifier=1742113358,
                                   force_registration=True)
         default_member = {
@@ -67,7 +68,7 @@ class Karma(commands.Cog):
                 await self.db.member(member).thanked_others()
             )
         except KeyError as e:
-            Logger.log("Exception occured.", level=LogLevel.ERROR, esc_info=e)
+            self.logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)
         else:
             embed = discord.Embed(color=0xEE2222,
                                   title=f"{member.name}'s karma")
@@ -79,7 +80,7 @@ class Karma(commands.Cog):
                             inline=False)
             await ctx.send(embed=embed)
 
-            Logger.log(
+            self.logger.log(
                 "{\n"
                 f"  member: {member.name}\n"
                 f"  {self.karma_roles['thanked']['name']}: {been_thanked_val}\n"
@@ -161,20 +162,20 @@ class Karma(commands.Cog):
         member_receiving = message.author
 
         if member_giving.id == member_receiving.id:
-            return Logger.log("member cannot give themselves karma.")
+            return self.logger.log("member cannot give themselves karma.")
 
         if member_receiving.bot:
-            return Logger.log("bot may not receive karma.")
+            return self.logger.log("bot may not receive karma.")
 
         modifier = 1 if is_add_action else -1
 
-        Logger.log(
+        self.logger.log(
             f"{member_giving.name} "
             f"{'gave a' if modifier == 1 else 'removed their'}"
             f" karma "
             f"{'to' if modifier == 1 else 'from'}"
             f" {member_receiving.name}",
-            guild=self.properties["guild"]
+            guild_id=self.properties["guild"]
         )
 
         await self.modify_karma(member_giving, member_receiving, modifier)
@@ -219,4 +220,4 @@ class Karma(commands.Cog):
             await self.db.member(member).set_raw(category_id,
                                                  value=thank_category)
         except KeyError as e:
-            Logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)
+            self.logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)
