@@ -48,9 +48,7 @@ class Logger(commands.Cog):
         "log_channel": None
     }
 
-    # # Guild_Id = 481613220550017036guild_id = 481613220550017036
-
-    def __init__(self, bot, p_guild_id = None):
+    def __init__(self, bot, args):
         """
         If `p_guild_id` is not provided then the guild id *must* 
         be provided at some point later before logging to the
@@ -59,7 +57,7 @@ class Logger(commands.Cog):
         self.bot = bot
         self.db = Config.get_conf(self, identifier=174211339,
                                   force_registration=True)
-        self.properties["guild"] = self.bot.get_guild(p_guild_id)
+        self.properties["guild"] = args["guild"]
 
         default_guild = {
             "settings": {
@@ -68,21 +66,6 @@ class Logger(commands.Cog):
         }
 
         self.db.register_guild(**default_guild)
-
-    def get_guild(self):
-        """
-        Gets the guild from the property collection.
-        """
-        if self.properties["guild"] is None:
-            logger.error("Guild not set.")
-            return None
-        return self.properties["guild"]
-
-    async def set_guild(self, guild):
-        """
-        Sets guild property collection
-        """
-        self.properties["guild"] = guild
 
     async def get_logging_channel(self):
         """
@@ -133,7 +116,7 @@ class Logger(commands.Cog):
 
         if channel_log is None:
             await ctx.send(warning("No channel found."))
-            self.log("No channel found", level=LogLevel.WARNING)
+            await self.log("No channel found", level=LogLevel.WARNING)
             return
 
         # register with database
@@ -153,7 +136,7 @@ class Logger(commands.Cog):
         self.log("No channel found", level=LogLevel.INFO)
         pass
 
-    async def log(self, msg: str = "", *, level: LogLevel = LogLevel.DEBUG, exc_info = None, guild_id = None):
+    async def log(self, msg: str = "", *, level: LogLevel = LogLevel.DEBUG, exc_info = None):
         """
         Logs to the configured logging channel if possible.
 
@@ -161,13 +144,7 @@ class Logger(commands.Cog):
         was sent that the logging channel as not been set yet.
         """
         
-        guild = self.get_guild()
-
-        if guild is None and guild_id:
-            guild = guild_id
-            self.set_guild(guild_id)
-
-        if not msg.strip() or guild is None:
+        if not msg.strip():
             return
 
         channel_log = self.get_logging_channel()

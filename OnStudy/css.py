@@ -22,11 +22,11 @@ class CSS(commands.Cog):
         }
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.guild = self.bot.get_guild(self.guild_id)
-        self.channels = OSChannels(bot)
+        self.guild = args["guild"]
+        self.channels = args["channels"]
 
         self.utility_roles["admin"]["ref"] = self.guild.get_role(self.utility_roles["admin"]["id"])
         self.utility_roles["staff"]["ref"] = self.guild.get_role(self.utility_roles["staff"]["id"])

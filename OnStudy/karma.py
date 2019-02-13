@@ -23,10 +23,12 @@ class Karma(commands.Cog):
         }
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.logger = Logger(bot)
+        self.logger = args["logger"]
+        self.properties["guild"] = args["guild"]
+    
         self.db = Config.get_conf(self, identifier=1742113358,
                                   force_registration=True)
         default_member = {

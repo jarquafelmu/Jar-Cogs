@@ -12,7 +12,6 @@ import random
 
 class Courses(commands.Cog):
     """Manages courses for Server McServerface."""
-    guild_id = 481613220550017036
     utility_roles = {
         "staff": {
             "id": 492382906241777678,
@@ -20,16 +19,16 @@ class Courses(commands.Cog):
         }
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot, args):
         """
         Initialize the CourseAssignment object
         """
         self.bot = bot
-        self.logger = Logger(bot, self.guild_id)
-        self.roles = RoleHandler(bot)
-        self.logic = Logic(bot)
-
-        self.guild = self.bot.get_guild(self.guild_id)
+        self.logger = args["logger"]
+        self.roles = args["roles"]
+        self.logic = args["logic"]
+        self.guild = args["guild"]
+        
         self.db = Config.get_conf(self, identifier=8748107325)
         self.course_list = self.bot.get_channel(514518408122073116)
         self.emoji = "\N{WHITE HEAVY CHECK MARK}"
@@ -519,7 +518,7 @@ class Courses(commands.Cog):
 
         # ensure that we actually got a course
         if course is None:
-            self.logger.log("course is None!", level=LogLevel.ERROR)
+            await self.logger.log("course is None!", level=LogLevel.ERROR)
             return
 
         # get the role from the guild that matches the course
@@ -542,7 +541,7 @@ class Courses(commands.Cog):
         """
         # get the member from the guild using the user_id in the payload
         member = self.guild.get_member(payload.user_id)
-        self.logger.log(f"user_id: {payload.user_id}")
+        await self.logger.log(f"user_id: {payload.user_id}")
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
         pass
 

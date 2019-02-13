@@ -1,14 +1,18 @@
 from redbot.core import commands
 from .logger import Logger, LogLevel
+from .logic import Logic
 import discord
+import random
 
 
 class RoleHandler(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, args):
         """
         Initialize the CourseAssignment object
         """
         self.bot = bot
+        self.logic = args["logic"]
+        self.logger = args["logger"]
         # self.guild = self.bot.get_guild(self.guild_id)
         # self.db = Config.get_conf(self, identifier=8748107325)
         # self.course_list = self.bot.get_channel(514518408122073116)
@@ -41,7 +45,7 @@ class RoleHandler(commands.Cog):
         If so the role is created and returned to the calling function.
         Otherwise, NoneType is returned.
         """
-        createRole = await self.confirm(ctx, msg=f"Role `{role_name}` does not exist. Would you like to create it?")
+        createRole = await self.logic.confirm(ctx, msg=f"Role `{role_name}` does not exist. Would you like to create it?")
         if (createRole):
             color = self.get_role_color()
             try:
