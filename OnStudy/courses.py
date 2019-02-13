@@ -196,7 +196,7 @@ class Courses(commands.Cog):
         """
         role = self.guild.get_role(role_id)
         if role is None:
-            return logger.ERRO("role is empty.")
+            return logger.error("role is empty.")
 
         await role.delete()
         pass
@@ -517,7 +517,7 @@ class Courses(commands.Cog):
 
         # ensure that we actually got a course
         if course is None:
-            logger.ERRO("course is None!")
+            logger.error("course is None!")
             return
 
         # get the role from the guild that matches the course
