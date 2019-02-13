@@ -1,16 +1,14 @@
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
-from .oschannels import OSChannels
-import discord
+from .logger import logger
 
+import discord
 
 class CSS(commands.Cog):
     """
     Custom functions to handle running the Computer Science Studybuddies server
     """
-
-    guild_id = 481613220550017036
     utility_roles = {
         "admin": {
             "id": 484368083897679882,

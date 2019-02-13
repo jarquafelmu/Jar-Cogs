@@ -1,8 +1,8 @@
 from redbot.core import Config, commands, checks
 from redbot.core.utils.predicates import MessagePredicate
-from .logger import Logger, LogLevel
-import discord
+from .logger import logger
 
+import discord
 
 class Karma(commands.Cog):
     """
@@ -26,8 +26,8 @@ class Karma(commands.Cog):
     def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.logger = args["logger"]
         self.properties["guild"] = args["guild"]
+        self.logic = args["logic"]
     
         self.db = Config.get_conf(self, identifier=1742113358,
                                   force_registration=True)
@@ -69,8 +69,8 @@ class Karma(commands.Cog):
             thanked_others_val = build_field(
                 await self.db.member(member).thanked_others()
             )
-        except KeyError as e:
-            self.logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)
+        except KeyError:
+            logger.error("Exception occured.")
         else:
             embed = discord.Embed(color=0xEE2222,
                                   title=f"{member.name}'s karma")
@@ -82,13 +82,12 @@ class Karma(commands.Cog):
                             inline=False)
             await ctx.send(embed=embed)
 
-            self.logger.log(
+            await logger.info(
                 "{\n"
                 f"  member: {member.name}\n"
                 f"  {self.karma_roles['thanked']['name']}: {been_thanked_val}\n"
                 f"  {self.karma_roles['thanking']['name']}: {thanked_others_val}"
-                "\n}",
-                level=LogLevel.INFO
+                "\n}"
             )
         pass
 
@@ -111,22 +110,10 @@ class Karma(commands.Cog):
             "Reset the karma for all members?"
             " There is **no** undo option!"
         )
-        if await self.confirm(ctx, msg=msg):
+        if await self.logic.confirm(ctx, msg=msg):
             await self.db.clear_all_members(ctx.guild)
         await ctx.send("Done.")
         pass
-
-    async def confirm(self, ctx, *, msg="Are you sure?"):
-        """
-        Handles confirmations for commands.
-
-        Optionally can supply a message that is displayed to the user.
-        Defaults to 'Are you sure?'.
-        """
-        await ctx.channel.send(f"{msg} (y/n)")
-        pred = MessagePredicate.yes_or_no(ctx)
-        await self.bot.wait_for("message", check=pred)
-        return pred.result
 
     async def on_raw_reaction_add(self,
                                   payload: discord.RawReactionActionEvent):
@@ -164,20 +151,19 @@ class Karma(commands.Cog):
         member_receiving = message.author
 
         if member_giving.id == member_receiving.id:
-            return self.logger.log("member cannot give themselves karma.")
+            return logger.debug("member cannot give themselves karma.")
 
         if member_receiving.bot:
-            return self.logger.log("bot may not receive karma.")
+            return logger.debug("bot may not receive karma.")
 
         modifier = 1 if is_add_action else -1
 
-        self.logger.log(
+        await logger.debug(
             f"{member_giving.name} "
             f"{'gave a' if modifier == 1 else 'removed their'}"
             f" karma "
             f"{'to' if modifier == 1 else 'from'}"
-            f" {member_receiving.name}",
-            guild_id=self.properties["guild"]
+            f" {member_receiving.name}"
         )
 
         await self.modify_karma(member_giving, member_receiving, modifier)
@@ -221,5 +207,5 @@ class Karma(commands.Cog):
 
             await self.db.member(member).set_raw(category_id,
                                                  value=thank_category)
-        except KeyError as e:
-            self.logger.log("Exception occured.", level=LogLevel.ERROR, exc_info=e)
+        except KeyError:
+            logger.exception("Exception occured.")

@@ -1,9 +1,9 @@
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import error
 from redbot.core.utils.predicates import MessagePredicate
-from .logger import Logger, LogLevel
 from .rolehandler import RoleHandler
 from .logic import Logic
+from .logger import logger
 
 import discord
 import re
@@ -24,11 +24,10 @@ class Courses(commands.Cog):
         Initialize the CourseAssignment object
         """
         self.bot = bot
-        self.logger = args["logger"]
         self.roles = args["roles"]
         self.logic = args["logic"]
         self.guild = args["guild"]
-        
+
         self.db = Config.get_conf(self, identifier=8748107325)
         self.course_list = self.bot.get_channel(514518408122073116)
         self.emoji = "\N{WHITE HEAVY CHECK MARK}"
@@ -91,10 +90,10 @@ class Courses(commands.Cog):
         # this point on needs to be updated
         for course_category in self.guild.categories:
             if course_category.name.lower() == course_role.name.lower():
-                await self.logger.log(f"Skipping channel creation for {course_role.name} as it already exists.", level=LogLevel.INFO)
+                logger.info(f"Skipping channel creation for {course_role.name} as it already exists.")
                 return course_category
 
-        await self.logger.log(f"Creating channel for {course_role.name}.", level=LogLevel.INFO)
+        logger.info(f"Creating channel for {course_role.name}.")
         # sets permissions for role objects
         overwrites = {
             self.guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -147,14 +146,14 @@ class Courses(commands.Cog):
         # check to make sure that the course isn't already in the course list
         async for message in self.course_list.history():
             if message.content == course_role.name:
-                self.logger.log(f"Skipping creation course list entry for {course_role.name} as it already exists.", level=LogLevel.WARNING)
+                logger.warning(f"Skipping creation course list entry for {course_role.name} as it already exists.")
                 return message.id
 
         # create the course role message
         message = await self.course_list.send(f"{course_role.name}")
         await self.add_reaction_to_message(ctx, message, self.emoji)
 
-        self.logger.log(f"Created course list entry for {course_role.name}", level=LogLevel.INFO)
+        logger.info(f"Created course list entry for {course_role.name}")
 
         return message.id
 
@@ -183,7 +182,7 @@ class Courses(commands.Cog):
         """
         category = self.guild.get_channel(category_id)
         if category is None:
-            return self.logger.log("category is empty.", level=LogLevel.ERROR)
+            return logger.error("category is empty.")
 
         for channel in category.channels:
             await channel.delete(reason=f"removing parent category")
@@ -197,7 +196,7 @@ class Courses(commands.Cog):
         """
         role = self.guild.get_role(role_id)
         if role is None:
-            return self.logger.log("role is empty.", level=LogLevel.ERROR)
+            return logger.ERRO("role is empty.")
 
         await role.delete()
         pass
@@ -208,7 +207,7 @@ class Courses(commands.Cog):
         """
         msg = await self.course_list.get_message(msg_id)
         if msg is None:
-            return self.logger.log("msg is empty.", level=LogLevel.ERROR)
+            return logger.error("msg is empty")
 
         await msg.delete()
         pass
@@ -255,7 +254,7 @@ class Courses(commands.Cog):
             )
 
         if message_id == 0:
-            return await self.logger.log("Invalid message id")
+            return logger.error("Invalid message id")
 
         course_record = self._courses_create_record(
             course_role,
@@ -283,14 +282,14 @@ class Courses(commands.Cog):
                 async for message in self.course_list.history():
                     await message.remove_reaction(self.emoji, member)
                 await ctx.send("Done.")
-            except discord.Forbidden as e:
-                self.logger.log("Insufficient permissions to remove reaction.", level=LogLevel.ERROR, exc_info=e)
-            except discord.NotFound as e:
-                self.logger.log("The member or emoji you specified was not found.", level=LogLevel.ERROR, exc_info=e)
-            except discord.InvalidArgument as e:
-                self.logger.log("The emoji parameter is invalid.", level=LogLevel.ERROR, exc_info=e)
-            except discord.HTTPException as e:
-                self.logger.log("Removing the reaction failed.", level=LogLevel.ERROR, exc_info=e)
+            except discord.Forbidden:
+                logger.exception("Insufficient permissions to remove reaction.")
+            except discord.NotFound:
+                logger.exception("The member or emoji you specified was not found.")
+            except discord.InvalidArgument:
+                logger.exception("The emoji parameter is invalid.")
+            except discord.HTTPException:
+                logger.exception("Removing the reaction failed.")
         pass
 
     @_courses.command(name="reset")
@@ -350,14 +349,14 @@ class Courses(commands.Cog):
                 new_position = index + start_index
                 try:
                     await category.edit(name=category.name.upper(), position=new_position)
-                except discord.InvalidArgument as e:
-                    self.logger.log(f"Invalid attempt to change the position of category {category.name} to position {new_position}", level=LogLevel.ERROR, exc_info=e)
+                except discord.InvalidArgument:
+                    logger.exception(f"Invalid attempt to change the position of category {category.name} to position {new_position}")
                     await ctx.send(error(f"Invalid attempt to change the position of category {category.name} to position {new_position}"))
-                except discord.Forbidden as e:
-                    self.logger.log(f"Forbidden from modifying category {category.name}", level=LogLevel.ERROR, exc_info=e)
+                except discord.Forbidden:
+                    logger.exception(f"Forbidden from modifying category {category.name}")
                     await ctx.send(error(f"Forbidden from modifying category {category.name}"))
-                except discord.HTTPException as e:
-                    self.logger.log(f"Failed to edit category {category.name}", level=LogLevel.ERROR, exc_info=e)
+                except discord.HTTPException:
+                    logger.exception(f"Failed to edit category {category.name}")
                     await ctx.send(error(f"Failed to edit category {category.name}"))
 
         await ctx.send("Done.")
@@ -381,10 +380,10 @@ class Courses(commands.Cog):
                     # syncs users with the courses they have signed up for
                     await self._courses_sync_roles(ctx, message)
                 await ctx.send("Done.")
-            except discord.Forbidden as e:
-                self.logger.log("discord.Forbidden error.", level=LogLevel.ERROR, exc_info=e)
-            except discord.HTTPException as e:
-                self.logger.log("discord.HTTPException error.", level=LogLevel.ERROR, exc_info=e)
+            except discord.Forbidden:
+                logger.exception("discord.Forbidden error.")
+            except discord.HTTPException:
+                logger.exception("discord.HTTPException error.")
         pass
 
     async def _courses_sync_roles(self, ctx, message: discord.Message):
@@ -468,14 +467,14 @@ class Courses(commands.Cog):
         try:
             # add initial reaction to the course to make it easier on users to add it
             await message.add_reaction(emoji)
-        except discord.InvalidArgument as e:
-            self.logger.log(f"Emoji was not a valid emoji.", level=LogLevel.ERROR, exc_info=e)
-        except discord.Forbidden as e:
-            self.logger.log("Forbidden action", level=LogLevel.ERROR, exc_info=e)
-        except discord.NotFound as e:
-            self.logger.log(f"The requested emoji was not found on the server.", level=LogLevel.ERROR, exc_info=e)
-        except discord.HTTPException as e:
-            self.logger.log(f"There was an issue with the webserver.", level=LogLevel.ERROR, exc_info=e)
+        except discord.InvalidArgument:
+            logger.exception(f"Emoji was not a valid emoji.")
+        except discord.Forbidden:
+            logger.exception("Forbidden action")
+        except discord.NotFound:
+            logger.exception(f"The requested emoji was not found on the server.")
+        except discord.HTTPException:
+            logger.exception(f"There was an issue with the webserver.")
         pass
 
     async def on_raw_reaction_add(self, payload):
@@ -497,11 +496,11 @@ class Courses(commands.Cog):
         Handles building the required products to register a student with a course
         """
         if member is None:
-            return self.logger.log("member is None!")
+            return logger.error("member is None!")
         elif member.bot:
-            return self.logger.log("member is bot")
+            return logger.debug("member is bot")
         elif str(emoji) != self.emoji:
-            return self.logger.log("incorrect emoji")
+            return logger.debug("incorrect emoji")
 
         # get the dict courses from the db
         courses = await self.db.guild(self.guild).get_raw("registered_courses")
@@ -518,14 +517,14 @@ class Courses(commands.Cog):
 
         # ensure that we actually got a course
         if course is None:
-            await self.logger.log("course is None!", level=LogLevel.ERROR)
+            logger.ERRO("course is None!")
             return
 
         # get the role from the guild that matches the course
         role = self.guild.get_role(course["role_id"])
 
         # update the status of the role for the member
-        await self.update_role_for_member(member, role, add)
+        await self.roles.update_member(member, role, add)
         pass
 
     async def process_course_assignment_from_call(self, reaction: discord.Reaction, member: discord.Member):
@@ -541,19 +540,6 @@ class Courses(commands.Cog):
         """
         # get the member from the guild using the user_id in the payload
         member = self.guild.get_member(payload.user_id)
-        await self.logger.log(f"user_id: {payload.user_id}")
+        logger.debug(f"user_id: {payload.user_id}")
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
-        pass
-
-    async def update_role_for_member(self, member: discord.Member, role: discord.Role, add: bool):
-        """
-        Handles the rule agreement reaction.
-        """
-        if add:
-            await member.add_roles(role)
-            action = "added"
-        else:
-            await member.remove_roles(role)
-            action = "removed"
-        self.logger.log(f"{action} role: {role.name} to member: {member.name}")
         pass

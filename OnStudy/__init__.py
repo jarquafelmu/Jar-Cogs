@@ -1,7 +1,6 @@
 from .courses import Courses
 from .css import CSS
 from .karma import Karma
-from .logger import Logger
 from .logic import Logic
 from .oschannels import OSChannels
 from .rolehandler import RoleHandler
@@ -14,11 +13,7 @@ async def setup(bot):
         "logic": Logic(bot)
     }
 
-    args["logger"] = Logger(bot, args)
     args["roles"] = RoleHandler(bot, args)
-
-    # logger stuff
-    bot.add_cog(args["logger"])
 
     # Karma cog stuff
     cog = Karma(bot, args)

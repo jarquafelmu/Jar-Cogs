@@ -1,9 +1,8 @@
 from redbot.core import commands
-from .logger import Logger, LogLevel
 from .logic import Logic
+from .logger import logger
 import discord
 import random
-
 
 class RoleHandler(commands.Cog):
     def __init__(self, bot, args):
@@ -12,20 +11,6 @@ class RoleHandler(commands.Cog):
         """
         self.bot = bot
         self.logic = args["logic"]
-        self.logger = args["logger"]
-        # self.guild = self.bot.get_guild(self.guild_id)
-        # self.db = Config.get_conf(self, identifier=8748107325)
-        # self.course_list = self.bot.get_channel(514518408122073116)
-        # self.emoji = "\N{WHITE HEAVY CHECK MARK}"
-        # self.utility_roles["staff"]["ref"] = self.guild.get_role(
-        #     self.utility_roles["staff"]["id"]
-        # )
-
-        # default_guild = {
-        #     "registered_courses": {}
-        # }
-
-        # self.db.register_guild(**default_guild)
         pass
 
     def getRolesForUser(self, user: discord.Member = None):
@@ -51,14 +36,14 @@ class RoleHandler(commands.Cog):
             try:
                 # create the role in the guild
                 role_obj = await ctx.guild.create_role(name=role_name, color=color)
-            except discord.InvalidArgument as e:
-                self.logger.log("InvalidArgument", level=LogLevel.ERROR, exc_info=e)
-            except discord.Forbidden as e:
-                self.logger.log(f"Bot lacks permission to add roles to the server.", level=LogLevel.ERROR, exc_info=e)
-            except discord.HTTPException as e:
-                self.logger.log(f"Creating the role failed.", level=LogLevel.ERROR, exc_info=e)
+            except discord.InvalidArgument:
+                logger.exception("InvalidArgument")
+            except discord.Forbidden:
+                logger.exception(f"Bot lacks permission to add roles to the server.")
+            except discord.HTTPException:
+                logger.exception(f"Creating the role failed.")
             else:
-                await self.logger.log(f"Creating role for {role_name}.", level=LogLevel.INFO)
+                logger.info(f"Creating role for {role_name}.")
                 return role_obj
         return None
 
@@ -79,3 +64,16 @@ class RoleHandler(commands.Cog):
                 break
 
         return color
+
+    async def update_member(self, member: discord.Member, role: discord.Role, add: bool):
+        """
+        Handles the rule agreement reaction.
+        """
+        if add:
+            await member.add_roles(role)
+            action = "added"
+        else:
+            await member.remove_roles(role)
+            action = "removed"
+        logger.debug(f"{action} role: {role.name} to member: {member.name}")
+        pass
