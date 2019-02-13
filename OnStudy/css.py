@@ -1,6 +1,7 @@
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
+from .oschannels import OSChannels
 import discord
 
 
@@ -25,65 +26,11 @@ class CSS(commands.Cog):
         """Initialization function"""
         self.bot = bot
         self.guild = self.bot.get_guild(self.guild_id)
-        self.channels = self.Channels(bot)
+        self.channels = OSChannels(bot)
 
         self.utility_roles["admin"]["ref"] = self.guild.get_role(self.utility_roles["admin"]["id"])
         self.utility_roles["staff"]["ref"] = self.guild.get_role(self.utility_roles["staff"]["id"])
 
-    class Channels:
-        """
-        Enum for channels to make it simplier to access them when needed
-        """
-
-        def __init__(self, bot):
-            self.bot = bot
-
-        course_list_id = 514518408122073116
-        log_id = 485218362272645120
-        new_members_id = 484378858968055814
-        roles_id = 482361038478508034
-        welcome_id = 514572072794587136
-
-        @property
-        def courseList(self):
-            """Logging channel object"""
-            return self.bot.get_channel(self.course_list_id)
-
-        @property
-        def log(self):
-            """Logging channel object"""
-            return self.bot.get_channel(self.log_id)
-
-        @property
-        def newMembers(self):
-            """New Members channel object"""
-            return self.bot.get_channel(self.new_members_id)
-
-        @property
-        def roles(self):
-            """Roles channel object"""
-            return self.bot.get_channel(self.roles_id)
-
-        @property
-        def welcome(self):
-            """Server Guidelines channel object"""
-            return self.bot.get_channel(self.welcome_id)
-
-        def anchor(self, channel):
-            """Formats the channel for embedding in a string"""
-
-            return f"<#{channel}>"
-
-    def getRoleList(self, user: discord.Member = None):
-        """
-        Gets a list of the roles assigned to the user,
-        omitting the '@everyone' role
-        """
-
-        if user is None:
-            return []
-
-        return [role.name for role in user.roles if role.name != "@everyone"]
 
     async def confirm(self, ctx, *, msg="Are you sure?"):
         """
