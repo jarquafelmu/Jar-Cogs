@@ -243,7 +243,7 @@ class Courses(commands.Cog):
         course_role = await self._courses_does_course_exist(role_name)
 
         if course_role is None:
-            new_role = await self._courses_roles_create(ctx, role_name)
+            new_role = await self.roles.create_role(ctx, role_name)
             if new_role is not None:
                 course_role = new_role
 
