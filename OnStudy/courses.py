@@ -3,6 +3,8 @@ from redbot.core.utils.chat_formatting import error
 from redbot.core.utils.predicates import MessagePredicate
 from .logger import Logger, LogLevel
 from .rolehandler import RoleHandler
+from .logic import Logic
+
 import discord
 import re
 import random
@@ -25,6 +27,7 @@ class Courses(commands.Cog):
         self.bot = bot
         self.logger = Logger(bot, self.guild_id)
         self.roles = RoleHandler(bot)
+        self.logic = Logic(bot)
 
         self.guild = self.bot.get_guild(self.guild_id)
         self.db = Config.get_conf(self, identifier=8748107325)
@@ -163,7 +166,7 @@ class Courses(commands.Cog):
 
         msg_id: the id of the course you want to remove
         """
-        confirm = await self.confirm(ctx, msg="Are you sure you wish to delete this course? There is no undo.")
+        confirm = await self.logic.confirm(ctx, msg="Are you sure you wish to delete this course? There is no undo.")
         if not confirm:
             return await ctx.send("Canceling.")
 
@@ -296,7 +299,7 @@ class Courses(commands.Cog):
         """
         Clears all registered courses. **NO UNDO**!
         """
-        pred = await self.confirm("Are you sure you wish to clear all registered courses? There is **no undo option**.")
+        pred = await self.logic.confirm("Are you sure you wish to clear all registered courses? There is **no undo option**.")
         if pred is False:
             return await ctx.channel.send("Canceling.")
 
@@ -432,7 +435,7 @@ class Courses(commands.Cog):
 
         # Ask if the missing riles should be created
         for role in roles_not_found:
-            new_role = await self._courses_roles_create(ctx, role)
+            new_role = await self.roles.create_role(ctx, role)
             if new_role is not None:
                 roles_to_add.append(new_role)
 
@@ -454,51 +457,10 @@ class Courses(commands.Cog):
         """
         if user is None:
             user = ctx.author
-        roles = self.roles.getRoleList(user)
+        roles = self.roles.getRolesForUser(user)
         formattedRoles = "\n".join(roles)
         await ctx.send(f"User: **{user.display_name}** has the following roles: \n{formattedRoles}")
         pass
-
-    async def _courses_roles_create(self, ctx, role_name: str):
-        """
-        Confirms that the user wants to create the role.
-        If so the role is created and returned to the calling function.
-        Otherwise, NoneType is returned.
-        """
-        createRole = await self.confirm(ctx, msg=f"Role `{role_name}` does not exist. Would you like to create it?")
-        if (createRole):
-            color = self.get_role_color()
-            try:
-                # create the role in the guild
-                role_obj = await ctx.guild.create_role(name=role_name, color=color)
-            except discord.InvalidArgument as e:
-                self.logger.log("InvalidArgument", level=LogLevel.ERROR, exc_info=e)
-            except discord.Forbidden as e:
-                self.logger.log(f"Bot lacks permission to add roles to the server.", level=LogLevel.ERROR, exc_info=e)
-            except discord.HTTPException as e:
-                self.logger.log(f"Creating the role failed.", level=LogLevel.ERROR, exc_info=e)
-            else:
-                await self.logger.log(f"Creating role for {role_name}.", level=LogLevel.INFO)
-                return role_obj
-        return None
-
-    def get_role_color(self):
-        """
-        Generates a random color for a role between 0xaaaaaa and 0xfffffe
-        """
-        def gen_color_segment():
-            # 153 == 99
-            # 255 == ff
-            return random.randint(153, 255)
-
-        while True:
-            color = discord.Color.from_rgb(gen_color_segment(), gen_color_segment(), gen_color_segment())
-
-            # prevent white (0xffffff) from being a role color.
-            if color.value != 16777215:
-                break
-
-        return color
 
     async def add_reaction_to_message(self, ctx, message: discord.Message, emoji):
         """
@@ -516,16 +478,6 @@ class Courses(commands.Cog):
         except discord.HTTPException as e:
             self.logger.log(f"There was an issue with the webserver.", level=LogLevel.ERROR, exc_info=e)
         pass
-
-    async def confirm(self, ctx, *, msg="Are you sure?"):
-        """
-        Handles confirmations for commands.
-        Optionally can supply a message that is displayed to the user. Defaults to 'Are you sure?'.
-        """
-        await ctx.channel.send(f"{msg} (y/n)")
-        pred = MessagePredicate.yes_or_no(ctx)
-        await self.bot.wait_for("message", check=pred)
-        return pred.result
 
     async def on_raw_reaction_add(self, payload):
         """
