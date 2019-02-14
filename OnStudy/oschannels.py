@@ -5,12 +5,12 @@ class OSChannels(commands.Cog):
     """
     Enum for channels to make it simplier to access them when needed
     """    
-
-    course_list_id = 514518408122073116
-    log_id = 485218362272645120
-    new_members_id = 484378858968055814
-    roles_id = 482361038478508034
-    welcome_id = 514572072794587136
+    channel_ids = {        
+        "courseList": 514518408122073116,
+        "log": 485218362272645120,
+        "newMembers": 484378858968055814,
+        "welcome": 514572072794587136
+    }
 
     def __init__(self, bot):
         self.bot = bot
@@ -20,35 +20,35 @@ class OSChannels(commands.Cog):
         """
         Course List channel object
         """
-        return self.bot.get_channel(self.course_list_id)
+        if self.courseList is None:
+            self.courseList = self.bot.get_channel(self.channel_ids["courseList"])
+        return self.courseList
 
     @property
     def log(self):
         """
         Logging channel object
         """
-        return self.bot.get_channel(self.log_id)
-
+        if self.log is None:
+            self.log = self.bot.get_channel(self.channel_ids["log"])
+        return self.log
     @property
     def newMembers(self):
         """
         New Members channel object
         """
-        return self.bot.get_channel(self.new_members_id)
-
-    @property
-    def roles(self):
-        """
-        Roles channel object
-        """
-        return self.bot.get_channel(self.roles_id)
+        if self.newMembers is None:
+            self.newMembers = self.bot.get_channel(self.channel_ids["newMembers"])
+        return self.newMembers
 
     @property
     def welcome(self):
         """
         Server Guidelines channel object
         """
-        return self.bot.get_channel(self.welcome_id)
+        if self.welcome is None:
+            self.welcome = self.bot.get_channel(self.channel_ids["welcome"])
+        return self.welcome
 
     def anchor(self, channel):
         """
