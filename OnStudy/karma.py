@@ -113,7 +113,7 @@ class Karma(commands.Cog):
             logger.debug("Syncing karma scores.")
 
         # reset karma scores
-        await self.db.clear_all_members(ctx.guild)
+        await self.clear_karma(ctx)
 
         async def status_msg(ctx, msg, *, msgObj = None):
             if msgObj is None:
@@ -187,7 +187,6 @@ class Karma(commands.Cog):
         """
         Clears the karma data.
         """
-        logger.info("Resetting all member's karma scores!")
 
         # clears all the data stored for member of this guild in the database
         msg = (
@@ -195,8 +194,13 @@ class Karma(commands.Cog):
             " There is **no** undo option!"
         )
         if await self.properties["logic"].confirm(ctx, msg=msg):
-            await self.db.clear_all_members(ctx.guild)
-        await ctx.send("Done.")        
+            await self.clear_karma(ctx)
+        await ctx.send("Done.")
+
+    async def clear_karma(self, ctx):
+        logger.info("Resetting all member's karma scores!")
+        await ctx.send("Resetting all member's karma scores!")
+        await self.db.clear_all_members(ctx.guild)
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """
@@ -231,9 +235,6 @@ class Karma(commands.Cog):
 
             if str(payload.emoji) != self.thumbs_up_emoji:
                 return
-
-        # if (not self.properties["logic"].validate_member(member_receiving) or not self.properties["logic"].validate_member(member_receiving)):
-        #     return
 
         if member_giving.id == member_receiving.id:
             return logger.debug("member cannot give themselves karma.")
