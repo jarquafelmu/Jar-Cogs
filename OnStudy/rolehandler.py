@@ -1,5 +1,4 @@
 from redbot.core import commands
-from .logic import Logic
 from .logger import logger
 
 import discord

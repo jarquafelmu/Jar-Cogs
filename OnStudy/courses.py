@@ -1,8 +1,6 @@
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import error
 from redbot.core.utils.predicates import MessagePredicate
-from .rolehandler import RoleHandler
-from .logic import Logic
 from .logger import logger
 
 import discord
