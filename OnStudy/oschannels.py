@@ -14,41 +14,48 @@ class OSChannels(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        
+        # channels
+        self.channel_courseList = None
+        self.channel_log = None
+        self.channel_newMembers = None
+        self.channel_welcome = None
+
 
     @property
     def courseList(self):
         """
         Course List channel object
         """
-        if self.courseList is None:
-            self.courseList = self.bot.get_channel(self.channel_ids["courseList"])
-        return self.courseList
+        if self.channel_courseList is None:
+            self.channel_courseList = self.bot.get_channel(self.channel_ids["courseList"])
+        return self.channel_courseList
 
     @property
     def log(self):
         """
         Logging channel object
         """
-        if self.log is None:
-            self.log = self.bot.get_channel(self.channel_ids["log"])
-        return self.log
+        if self.channel_log is None:
+            self.channel_log = self.bot.get_channel(self.channel_ids["log"])
+        return self.channel_log
     @property
     def newMembers(self):
         """
         New Members channel object
         """
-        if self.newMembers is None:
-            self.newMembers = self.bot.get_channel(self.channel_ids["newMembers"])
-        return self.newMembers
+        if self.channel_newMembers is None:
+            self.channel_newMembers = self.bot.get_channel(self.channel_ids["newMembers"])
+        return self.channel_newMembers
 
     @property
     def welcome(self):
         """
         Server Guidelines channel object
         """
-        if self.welcome is None:
-            self.welcome = self.bot.get_channel(self.channel_ids["welcome"])
-        return self.welcome
+        if self.channel_welcome is None:
+            self.channel_welcome = self.bot.get_channel(self.channel_ids["welcome"])
+        return self.channel_welcome
 
     def anchor(self, channel):
         """
