@@ -120,7 +120,7 @@ class CSS(commands.Cog):
         mentionList = [member.mention for member in members]
 
         await channel.send(
-            f"Welcome {humanize_list(mentionList)}! Check out the {self.channels.anchor(self.channels.welcome_id)} channel for some information about the server."
+            f"Welcome {humanize_list(mentionList)}! Check out the {self.channels.anchor(self.channels.welcome.id)} channel for some information about the server."
         )
         
 
