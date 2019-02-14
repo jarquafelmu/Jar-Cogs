@@ -27,6 +27,7 @@ class Courses(commands.Cog):
         self.roles = args["roles"]
         self.logic = args["logic"]
         self.guild = args["guild"]
+        self.channels = args["channels"]
 
         self.db = Config.get_conf(self, identifier=8748107325)
         self.course_list = self.bot.get_channel(514518408122073116)
@@ -540,6 +541,11 @@ class Courses(commands.Cog):
         """
         # get the member from the guild using the user_id in the payload
         member = self.guild.get_member(payload.user_id)
-        logger.debug(f"user_id: {payload.user_id}")
+        if member is None:
+            logger.debug(f"user_id: {payload.user_id}")
+            await self.channels.log.send(error(
+                f"Unable to add user with id #{payload.user_id} to their requested "
+                "course as they were not found to be a member of the guild."
+            ))
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
         
