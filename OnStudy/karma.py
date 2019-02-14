@@ -89,7 +89,7 @@ class Karma(commands.Cog):
                 f"  {self.karma_roles['thanking']['name']}: {thanked_others_val}"
                 "\n}"
             )
-        pass
+        
 
     @_karma.group(name="settings", aliases=["s", "set"])
     @checks.admin()
@@ -113,7 +113,7 @@ class Karma(commands.Cog):
         if await self.logic.confirm(ctx, msg=msg):
             await self.db.clear_all_members(ctx.guild)
         await ctx.send("Done.")
-        pass
+        
 
     async def on_raw_reaction_add(self,
                                   payload: discord.RawReactionActionEvent):
@@ -121,7 +121,7 @@ class Karma(commands.Cog):
         Member agrees to the rules.
         """
         await self.process_reaction(payload=payload, is_add_action=True)
-        pass
+        
 
     async def on_raw_reaction_remove(self,
                                      payload: discord.RawReactionActionEvent):
@@ -129,7 +129,7 @@ class Karma(commands.Cog):
         Member no longer agrees to the rules.
         """
         await self.process_reaction(payload=payload, is_add_action=False)
-        pass
+        
 
     async def process_reaction(self, *,
                                payload: discord.RawReactionActionEvent,
@@ -167,7 +167,7 @@ class Karma(commands.Cog):
         )
 
         await self.modify_karma(member_giving, member_receiving, modifier)
-        pass
+        
 
     async def modify_karma(self, member_giving, member_receiving, modifier):
         """
@@ -180,7 +180,7 @@ class Karma(commands.Cog):
         await self.update_karma_category(member_receiving,
                                          self.karma_roles["thanked"]["name"],
                                          modifier)
-        pass
+        
 
     def to_non_negative(self, val: int):
         """

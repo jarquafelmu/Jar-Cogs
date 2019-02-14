@@ -1,6 +1,7 @@
 from redbot.core import commands
 from .logic import Logic
 from .logger import logger
+
 import discord
 import random
 
@@ -11,7 +12,8 @@ class RoleHandler(commands.Cog):
         """
         self.bot = bot
         self.logic = args["logic"]
-        pass
+        self.guild = args["guild"]
+        
 
     def getRolesForUser(self, user: discord.Member = None):
         """
@@ -67,13 +69,23 @@ class RoleHandler(commands.Cog):
 
     async def update_member(self, member: discord.Member, role: discord.Role, add: bool):
         """
-        Handles the rule agreement reaction.
+        Adds or removes a role from mbember
         """
+        if member is None:
+            return logger.error("Member is none")
+
+        try:
+            assert member.guild == role.guild
+        except AttributeError:
+            logger.exception(f"Member the object for '{member.name}' was a discord.User object instead of a discord.Member object. Attempting to obtain member object from guild.")
+            member = self.guild.get_member(member.id)
+            if member is None:
+                return logger.error(f"Member wasn't found in the guild either. Skipping member.")
+
         if add:
             await member.add_roles(role)
-            action = "added"
         else:
             await member.remove_roles(role)
-            action = "removed"
-        logger.debug(f"{action} role: {role.name} to member: {member.name}")
-        pass
+
+        logger.debug(f"{'Added' if add else 'Removed'} role: {role.name} to member: {member.name}")
+        

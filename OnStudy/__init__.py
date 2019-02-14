@@ -26,4 +26,5 @@ async def setup(bot):
     # CSS cog stuff
     cog = CSS(bot, args)
     bot.add_cog(cog)
+    
     await cog.is_loaded()

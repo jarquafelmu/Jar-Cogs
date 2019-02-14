@@ -75,7 +75,7 @@ class CSS(commands.Cog):
 
         #  for message in recentlyJoinedMembers:
         await self.welcome(self.channels.newMembers, members)
-        pass
+        
 
     async def prodMember(self, ctx, user: discord.Member = None):
         """
@@ -96,7 +96,7 @@ class CSS(commands.Cog):
         )
 
         await log.send(f"Prodded **{user.display_name}** as requested.")
-        pass
+        
 
     async def welcome(self, channel=None, members=None):
         """
@@ -122,7 +122,7 @@ class CSS(commands.Cog):
         await channel.send(
             f"Welcome {humanize_list(mentionList)}! Check out the {self.channels.anchor(self.channels.welcome_id)} channel for some information about the server."
         )
-        pass
+        
 
     # user commands
     @commands.command()
@@ -137,7 +137,7 @@ class CSS(commands.Cog):
         await self.welcome(ctx, user)
 
         await ctx.channel.send("Done.")
-        pass
+        
 
     @commands.command()
     @checks.admin()
@@ -153,7 +153,7 @@ class CSS(commands.Cog):
         await self.prodMember(ctx, user)
 
         await ctx.channel.send("Done.")
-        pass
+        
 
     @commands.command()
     @checks.admin()
@@ -187,7 +187,7 @@ class CSS(commands.Cog):
             await ctx.send(f"Finished.")
         else:
             return await ctx.send("Standing down.")
-        pass
+        
 
     # custom events
     async def is_loaded(self):
@@ -209,7 +209,7 @@ class CSS(commands.Cog):
             return
 
         await self.welcome(self.channels.newMembers, member)
-        pass
+        
 
     async def on_member_remove(self, member):
         """
@@ -220,4 +220,4 @@ class CSS(commands.Cog):
             return
 
         await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} has left the building.")
-        pass
+        

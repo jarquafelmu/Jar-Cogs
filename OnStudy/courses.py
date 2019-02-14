@@ -40,7 +40,7 @@ class Courses(commands.Cog):
         }
 
         self.db.register_guild(**default_guild)
-        pass
+        
 
     @commands.group(name="courses")
     @checks.admin()
@@ -48,7 +48,7 @@ class Courses(commands.Cog):
         """
         The course group of commands.
         """
-        pass
+        pass        
 
     def _courses_create_record(self, course_role: discord.Role, course_category: discord.CategoryChannel):
         """
@@ -81,7 +81,7 @@ class Courses(commands.Cog):
         await self._courses_register(ctx, role, sort=True)
 
         await ctx.channel.send("Done.")
-        pass
+        
 
     async def _course_create_channel(self, ctx, course_role, *, sections_num: int = 0):
         """
@@ -136,7 +136,7 @@ class Courses(commands.Cog):
 
         if topic:
             await channel.edit(topic=topic)
-        pass
+        
 
     async def _courses_create_course_list_entry(self, ctx, course_role):
         """
@@ -174,7 +174,7 @@ class Courses(commands.Cog):
             await self.remove_course_role(course["role_id"])
             await self.remove_course_list_entry(msg_id)
         await ctx.channel.send("Done.")
-        pass
+        
 
     async def remove_course_channel(self, category_id):
         """
@@ -188,7 +188,7 @@ class Courses(commands.Cog):
             await channel.delete(reason=f"removing parent category")
 
         await category.delete()
-        pass
+        
 
     async def remove_course_role(self, role_id):
         """
@@ -199,7 +199,7 @@ class Courses(commands.Cog):
             return logger.error("role is empty.")
 
         await role.delete()
-        pass
+        
 
     async def remove_course_list_entry(self, msg_id):
         """
@@ -210,7 +210,7 @@ class Courses(commands.Cog):
             return logger.error("msg is empty")
 
         await msg.delete()
-        pass
+        
 
     async def _courses_does_course_exist(self, course_role_name: str):
         """
@@ -269,7 +269,7 @@ class Courses(commands.Cog):
         if sort:
             await ctx.invoke(self._courses_sort)
 
-        pass
+        
 
     @_courses.command(name="remove_member", aliases=["rm"])
     async def _courses_remove_member(self, ctx, member: discord.Member):
@@ -290,7 +290,7 @@ class Courses(commands.Cog):
                 logger.exception("The emoji parameter is invalid.")
             except discord.HTTPException:
                 logger.exception("Removing the reaction failed.")
-        pass
+        
 
     @_courses.command(name="reset")
     async def _courses_reset(self, ctx):
@@ -306,7 +306,7 @@ class Courses(commands.Cog):
             async with self.db.guild(ctx.guild).registered_courses() as courses:
                 courses.clear()
         await ctx.channel.send("Done.")
-        pass
+        
 
     @_courses.command(name="show")
     async def _courses_show(self, ctx):
@@ -326,7 +326,7 @@ class Courses(commands.Cog):
                     "```"
                 )
                 courseNum += 1
-        pass
+        
 
     @_courses.command(name="sort")
     async def _courses_sort(self, ctx):
@@ -361,7 +361,7 @@ class Courses(commands.Cog):
 
         await ctx.send("Done.")
 
-        pass
+        
 
     @_courses.command(name="sync")
     async def _courses_sync(self, ctx):
@@ -384,7 +384,7 @@ class Courses(commands.Cog):
                 logger.exception("discord.Forbidden error.")
             except discord.HTTPException:
                 logger.exception("discord.HTTPException error.")
-        pass
+        
 
     async def _courses_sync_roles(self, ctx, message: discord.Message):
         """
@@ -401,7 +401,7 @@ class Courses(commands.Cog):
 
                 if not has_bot_reacted:
                     await self.add_reaction_to_message(ctx, message, self.emoji)
-        pass
+        
 
     @_courses.group(name="roles")
     async def _courses_roles(self, ctx):
@@ -444,7 +444,7 @@ class Courses(commands.Cog):
             await user.add_roles(*roles_to_add, reason=f"{ctx.message.author} requested it.")
 
         await ctx.channel.send("Done.")
-        pass
+        
 
     @_courses_roles.command(name="check")
     @checks.mod()
@@ -458,7 +458,7 @@ class Courses(commands.Cog):
         roles = self.roles.getRolesForUser(user)
         formattedRoles = "\n".join(roles)
         await ctx.send(f"User: **{user.display_name}** has the following roles: \n{formattedRoles}")
-        pass
+        
 
     async def add_reaction_to_message(self, ctx, message: discord.Message, emoji):
         """
@@ -475,28 +475,28 @@ class Courses(commands.Cog):
             logger.exception(f"The requested emoji was not found on the server.")
         except discord.HTTPException:
             logger.exception(f"There was an issue with the webserver.")
-        pass
+        
 
     async def on_raw_reaction_add(self, payload):
         """
         Member agrees to the rules.
         """
         await self.process_course_assignment_from_trigger(payload, add=True)
-        pass
+        
 
     async def on_raw_reaction_remove(self, payload):
         """
         Member no longer agrees to the rules.
         """
         await self.process_course_assignment_from_trigger(payload, add=False)
-        pass
+        
 
     async def process_course_assignment(self, member: discord.Member, emoji, message_id: int, add: bool):
         """
         Handles building the required products to register a student with a course
         """
         if member is None:
-            return logger.error("member is None!")
+            return logger.error("member is none!")
         elif member.bot:
             return logger.debug("member is bot")
         elif str(emoji) != self.emoji:
@@ -517,7 +517,7 @@ class Courses(commands.Cog):
 
         # ensure that we actually got a course
         if course is None:
-            logger.error("course is None!")
+            logger.error("course wasn't found!")
             return
 
         # get the role from the guild that matches the course
@@ -525,14 +525,14 @@ class Courses(commands.Cog):
 
         # update the status of the role for the member
         await self.roles.update_member(member, role, add)
-        pass
+        
 
     async def process_course_assignment_from_call(self, reaction: discord.Reaction, member: discord.Member):
         """
         Handles the processing of the reaction from an internal call.
         """
         await self.process_course_assignment(member, reaction.emoji, reaction.message.id, True)
-        pass
+        
 
     async def process_course_assignment_from_trigger(self, payload, *, add: bool):
         """
@@ -542,4 +542,4 @@ class Courses(commands.Cog):
         member = self.guild.get_member(payload.user_id)
         logger.debug(f"user_id: {payload.user_id}")
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
-        pass
+        
