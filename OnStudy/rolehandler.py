@@ -72,14 +72,9 @@ class RoleHandler(commands.Cog):
         """
         if member is None:
             return logger.error("Member is none")
-
-        try:
-            assert member.guild == role.guild
-        except AttributeError:
-            logger.exception(f"Member the object for '{member.name}' was a discord.User object instead of a discord.Member object. Attempting to obtain member object from guild.")
-            member = self.guild.get_member(member.id)
-            if member is None:
-                return logger.error(f"Member wasn't found in the guild either. Skipping member.")
+        
+        if not self.logic.validate_member(member):
+            return logger.debug(f"Member ({member.id}) {member.display_name} is no longer a member of the server.")
 
         if add:
             await member.add_roles(role)

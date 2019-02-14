@@ -1,6 +1,7 @@
 from redbot.core import commands
 from redbot.core.utils.predicates import MessagePredicate
 
+import discord
 
 class Logic(commands.Bot):
 
@@ -18,4 +19,12 @@ class Logic(commands.Bot):
         await ctx.channel.send(f"{msg} (y/n)")
         pred = MessagePredicate.yes_or_no(ctx)
         await self.bot.wait_for("message", check=pred)
-        return pred.result
+        return pred.result        
+
+    def validate_member(self, member: discord.Member = None):
+        """
+        Validates if a member is still on the server or not.
+        """
+        if member is None:
+            return False
+        return hasattr(member, "guild")
