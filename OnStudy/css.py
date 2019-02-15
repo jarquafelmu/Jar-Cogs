@@ -46,29 +46,23 @@ class CSS(commands.Cog):
         """
         Greets members that joined the server while the bot was unavailable
         """
-
         recentlyJoinedMembers = []
         messageLimit = 50
-
-        log = self.channels.log
-
-        if log is None:
-            return
 
         # scan through the `messageLimit` most recent messages, add any new member announcment to the list of
         # `recentlyJoinedMembers` exit as soon as there is message from the bot found
         async for message in self.channels.newMembers.history(limit=messageLimit):
             if not message.author.bot:
-                if message.type == discord.MessageType.new_member:
+                if message.author.guild == self.guild and message.type == discord.MessageType.new_member:
                     recentlyJoinedMembers.append(message)
             else:
                 break
 
         size = len(recentlyJoinedMembers)
-        await log.send(f"{size} new member{'s' if size > 1 or size == 0 else ''} greeted since I was last online.")
+        await self.channels.log.send(f"{size} new member{'s' if size != 1 else ''} greeted since I was last online.")
 
         # if our list is empty then we don't want to do anything else
-        if size == 0:
+        if not recentlyJoinedMembers:
             return
 
         members = [message.author for message in recentlyJoinedMembers]
@@ -81,7 +75,6 @@ class CSS(commands.Cog):
         """
         DM's the user asking them to tell the server what courses they have
         """
-
         if user is None:
             return
 
@@ -111,10 +104,8 @@ class CSS(commands.Cog):
         if not isinstance(members, list):
             members = [members]
 
-        size = len(members)
-
         # if the list is empty then return as we are done
-        if size == 0:
+        if not members:
             return
 
         mentionList = [member.mention for member in members]
@@ -194,8 +185,6 @@ class CSS(commands.Cog):
         """
         Handles actions that are done when the bot is loaded and ready to work.
         """
-
-        # await self.channels.log.send(f"Bot is loaded and ready.")
         await self.pastGreet()
 
     # event triggers
@@ -205,7 +194,7 @@ class CSS(commands.Cog):
         """
 
         # we only want to announce if this is the right server
-        if member.guild.id != self.guild.id:
+        if member.guild != self.guild:
             return
 
         await self.welcome(self.channels.newMembers, member)
@@ -216,8 +205,8 @@ class CSS(commands.Cog):
         event happens when a member leaves the server
         """
         # we only want to announce if this is the right server
-        if member.guild.id != self.guild.id:
+        if member.guild != self.guild:
             return
 
-        await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} has left the building.")
+        await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} ({member.name}#{member.discriminator}) has left the building.")
         
