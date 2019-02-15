@@ -1,9 +1,11 @@
-from redbot.core import checks, commands
+from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
 from .logger import logger
+from datetime import datetime, timedelta
 
 import discord
+import pickle
 
 class CSS(commands.Cog):
     """
@@ -20,27 +22,27 @@ class CSS(commands.Cog):
         }
     }
 
+    properties = {
+        "prod_protection_days": 2,
+        "guild": None,
+        "channels": None,
+        "logic": None
+    }
+
     def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.guild = args["guild"]
-        self.channels = args["channels"]
+        self.properties["guild"] = args["guild"]
+        self.properties["channels"] = args["channels"]
+        self.properties["logic"] = args["logic"]
+        self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
+        default_member = {
+            "last_prodded": None
+        }
+        self.db.register_member(**default_member)
 
-        self.utility_roles["admin"]["ref"] = self.guild.get_role(self.utility_roles["admin"]["id"])
-        self.utility_roles["staff"]["ref"] = self.guild.get_role(self.utility_roles["staff"]["id"])
-
-
-    async def confirm(self, ctx, *, msg="Are you sure?"):
-        """
-        Handles confirmations for commands.
-
-        Optionally can supply a message that is displayed to the user. Defaults to 'Are you sure?'.
-        """
-
-        await ctx.channel.send(f"{msg}")
-        pred = MessagePredicate.yes_or_no(ctx)
-        await self.bot.wait_for("message", check=pred)
-        return pred.result
+        self.utility_roles["admin"]["ref"] = self.properties["guild"].get_role(self.utility_roles["admin"]["id"])
+        self.utility_roles["staff"]["ref"] = self.properties["guild"].get_role(self.utility_roles["staff"]["id"])
 
     async def pastGreet(self, ctx=None):
         """
@@ -51,15 +53,15 @@ class CSS(commands.Cog):
 
         # scan through the `messageLimit` most recent messages, add any new member announcment to the list of
         # `recentlyJoinedMembers` exit as soon as there is message from the bot found
-        async for message in self.channels.newMembers.history(limit=messageLimit):
+        async for message in self.properties["channels"].newMembers.history(limit=messageLimit):
             if not message.author.bot:
-                if message.author.guild == self.guild and message.type == discord.MessageType.new_member:
+                if message.author.properties["guild"] == self.properties["guild"] and message.type == discord.MessageType.new_member:
                     recentlyJoinedMembers.append(message)
             else:
                 break
 
         size = len(recentlyJoinedMembers)
-        await self.channels.log.send(f"{size} new member{'s' if size != 1 else ''} greeted since I was last online.")
+        await self.properties["channels"].log.send(f"{size} new member{'s' if size != 1 else ''} greeted since I was last online.")
 
         # if our list is empty then we don't want to do anything else
         if not recentlyJoinedMembers:
@@ -68,27 +70,27 @@ class CSS(commands.Cog):
         members = [message.author for message in recentlyJoinedMembers]
 
         #  for message in recentlyJoinedMembers:
-        await self.welcome(self.channels.newMembers, members)
+        await self.welcome(self.properties["channels"].newMembers, members)
         
 
-    async def prodMember(self, ctx, user: discord.Member = None):
+    async def prodMember(self, ctx, member: discord.Member = None):
         """
         DM's the user asking them to tell the server what courses they have
         """
-        if user is None:
+        if member is None:
             return
 
-        log = self.channels.log
+        log = self.properties["channels"].log
 
-        await user.send(
+        await member.send(
             f"Hi {user.display_name}.\n"
-            "You have been on the **{user.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
+            "You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
             "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
             "Don't reply to this message as this is just a bot.\n"
-            f"Instead visit server and grab your courses in the **#{self.channels.courseList.name}** channel. Hope to see you soon."
+            f"Instead visit server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
         )
 
-        await log.send(f"Prodded **{user.display_name}** as requested.")
+        await log.send(f"Prodded **{member.display_name}** as requested.")
         
 
     async def welcome(self, channel=None, members=None):
@@ -111,7 +113,7 @@ class CSS(commands.Cog):
         mentionList = [member.mention for member in members]
 
         await channel.send(
-            f"Welcome {humanize_list(mentionList)}! Check out the {self.channels.anchor(self.channels.welcome.id)} channel for some information about the server."
+            f"Welcome {humanize_list(mentionList)}! Check out the {self.properties["channels"].anchor(self.properties["channels"].welcome.id)} channel for some information about the server."
         )
         
 
@@ -154,23 +156,34 @@ class CSS(commands.Cog):
 
         Can only be used by admins.
         """
-        confirmed = await self.confirm(ctx)
+        confirmed = await self.properties["logic"].confirm(ctx)
 
         if confirmed:
             # build list of members without roles
-            membersWithoutRoles = [member for member in ctx.guild.members if len(member.roles) < 2]
+            membersWithoutRoles = [member for member in ctx.properties["guild"].members if len(member.roles) < 2]
 
-            log = self.channels.log
+            log = self.properties["channels"].log
 
             size = len(membersWithoutRoles)
             if size == 0:
                 return await ctx.send("All members are have courses.")
 
-            await ctx.send(f"Prodding {size} member{'s' if size > 1 or size == 0 else ''}.")
+            await ctx.send(f"Prodding {size} member{'s' if size != 1 else ''}.")
 
             async with log.typing():
                 for member in membersWithoutRoles:
+                    last_prodded = await self.db.member(member).last_prodded()
+                    now = datetime.utcnow()
+                    logger.debug(f"attempting to prod member {member.display_name}")         
+                    if last_prodded is not None:
+                        last_prodded = datetime.fromtimestamp(last_prodded)
+                        member should be protected from being prodded for two days
+                        if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:
+                            logger.debug("member has been prodded too recently")
+                            continue
                     await self.prodMember(ctx, member)
+                    await self.db.member(member).last_prodded.set(now.timestamp())
+                    logger.debug("prodded member")
 
             # announce that the bot is done prodding members
             await log.send(f"\n\nCompleted prodding necessary members.")
@@ -194,10 +207,10 @@ class CSS(commands.Cog):
         """
 
         # we only want to announce if this is the right server
-        if member.guild != self.guild:
+        if member.guild != self.properties["guild"]:
             return
 
-        await self.welcome(self.channels.newMembers, member)
+        await self.welcome(self.properties["channels"].newMembers, member)
         
 
     async def on_member_remove(self, member):
@@ -205,8 +218,8 @@ class CSS(commands.Cog):
         event happens when a member leaves the server
         """
         # we only want to announce if this is the right server
-        if member.guild != self.guild:
+        if member.guild != self.properties["guild"]:
             return
 
-        await self.channels.log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} ({member.name}#{member.discriminator}) has left the building.")
+        await self.properties["channels"].log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} ({member.name}#{member.discriminator}) has left the building.")
         
