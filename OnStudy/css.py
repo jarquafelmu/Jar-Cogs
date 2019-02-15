@@ -83,7 +83,7 @@ class CSS(commands.Cog):
         log = self.properties["channels"].log
 
         await member.send(
-            f"Hi {user.display_name}.\n"
+            f"Hi {member.display_name}.\n"
             "You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
             "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
             "Don't reply to this message as this is just a bot.\n"
@@ -113,7 +113,7 @@ class CSS(commands.Cog):
         mentionList = [member.mention for member in members]
 
         await channel.send(
-            f"Welcome {humanize_list(mentionList)}! Check out the {self.properties["channels"].anchor(self.properties["channels"].welcome.id)} channel for some information about the server."
+            f"Welcome {humanize_list(mentionList)}! Check out the {self.properties['channels'].anchor(self.properties['channels'].welcome.id)} channel for some information about the server."
         )
         
 
@@ -177,7 +177,7 @@ class CSS(commands.Cog):
                     logger.debug(f"attempting to prod member {member.display_name}")         
                     if last_prodded is not None:
                         last_prodded = datetime.fromtimestamp(last_prodded)
-                        member should be protected from being prodded for two days
+                        # member should be protected from being prodded for two days
                         if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:
                             logger.debug("member has been prodded too recently")
                             continue
