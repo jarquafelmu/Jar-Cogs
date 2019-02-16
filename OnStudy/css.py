@@ -80,7 +80,7 @@ class CSS(commands.Cog):
         DM's the user asking them to tell the server what courses they have
         """
         if member is None:
-            return
+            return False
         
         last_prodded = await self.db.member(member).last_prodded()
         now = datetime.utcnow()
@@ -89,7 +89,8 @@ class CSS(commands.Cog):
             last_prodded = datetime.fromtimestamp(last_prodded)
             # member should be protected from being prodded for a set amount of time
             if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:                
-                return logger.debug("member has been prodded too recently")
+                logger.debug("member has been prodded too recently")
+                return False
 
         with contextlib.suppress(discord.HTTPException):
             # we don't want blocked DMs preventing us from prodding
@@ -105,6 +106,8 @@ class CSS(commands.Cog):
         logger.debug("prodded member")
 
         await self.properties["channels"].log.send(f"Prodded **{member.display_name}** as requested.")
+
+        return True
         
 
     async def welcome(self, channel=None, members=None):
@@ -152,23 +155,26 @@ class CSS(commands.Cog):
         """
         DM's the user asking them to tell the server what courses they have
         """
-
         if user is None:
             return
 
         # single user
-        await self.prodMember(ctx, user)
-
-        await ctx.channel.send("Done.")
-        
+        result = await self.prodMember(ctx, user)
+        if result:
+            msg = "Prodded member."    
+        else:
+            msg = (
+                "Prodding was unsuccessful\n"
+                "Either the member was recently prodded or the supplied member was invalid."
+            )
+            
+        await ctx.channel.send(msg)
 
     @commands.command()
     @checks.admin()
     async def prodAll(self, ctx):
         """
-        Prods all members of the server, using DM's, who do not currently have any roles
-
-        Can only be used by admins.
+        Prods all the members of the server who do not have roles.
         """
         confirmed = await self.properties["logic"].confirm(ctx)
 
