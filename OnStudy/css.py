@@ -81,9 +81,6 @@ class CSS(commands.Cog):
         """
         if member is None:
             return
-
-        log = self.properties["channels"].log
-
         
         last_prodded = await self.db.member(member).last_prodded()
         now = datetime.utcnow()
@@ -93,7 +90,7 @@ class CSS(commands.Cog):
             # member should be protected from being prodded for two days
             if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:                
                 return logger.debug("member has been prodded too recently")
-                
+
         with contextlib.suppress(discord.HTTPException):
             # we don't want blocked DMs preventing us from prodding
             await member.send(
@@ -107,7 +104,7 @@ class CSS(commands.Cog):
         await self.db.member(member).last_prodded.set(now.timestamp())
         logger.debug("prodded member")
 
-        await log.send(f"Prodded **{member.display_name}** as requested.")
+        await self.properties["channels"].log.send(f"Prodded **{member.display_name}** as requested.")
         
 
     async def welcome(self, channel=None, members=None):
