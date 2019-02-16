@@ -95,7 +95,7 @@ class CSS(commands.Cog):
             # we don't want blocked DMs preventing us from prodding
             await member.send(
                 f"Hi {member.display_name}.\n"
-                "You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
+                f"You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
                 "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
                 "Don't reply to this message as this is just a bot.\n"
                 f"Instead visit server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
