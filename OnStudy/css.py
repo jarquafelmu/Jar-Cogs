@@ -1,11 +1,13 @@
-from redbot.core import checks, commands, Config
-from redbot.core.utils.chat_formatting import humanize_list
-from redbot.core.utils.predicates import MessagePredicate
-from .logger import logger
+import contextlib
 from datetime import datetime, timedelta
 
 import discord
-import pickle
+from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.predicates import MessagePredicate
+
+from .logger import logger
+
 
 class CSS(commands.Cog):
     """
@@ -82,13 +84,28 @@ class CSS(commands.Cog):
 
         log = self.properties["channels"].log
 
-        await member.send(
-            f"Hi {member.display_name}.\n"
-            "You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
-            "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
-            "Don't reply to this message as this is just a bot.\n"
-            f"Instead visit server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
-        )
+        
+        last_prodded = await self.db.member(member).last_prodded()
+        now = datetime.utcnow()
+        logger.debug(f"attempting to prod member {member.display_name}")         
+        if last_prodded is not None:
+            last_prodded = datetime.fromtimestamp(last_prodded)
+            # member should be protected from being prodded for two days
+            if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:                
+                return logger.debug("member has been prodded too recently")
+                
+        with contextlib.suppress(discord.HTTPException):
+            # we don't want blocked DMs preventing us from prodding
+            await member.send(
+                f"Hi {member.display_name}.\n"
+                "You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
+                "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
+                "Don't reply to this message as this is just a bot.\n"
+                f"Instead visit server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
+            )
+
+        await self.db.member(member).last_prodded.set(now.timestamp())
+        logger.debug("prodded member")
 
         await log.send(f"Prodded **{member.display_name}** as requested.")
         
@@ -172,18 +189,7 @@ class CSS(commands.Cog):
 
             async with log.typing():
                 for member in membersWithoutRoles:
-                    last_prodded = await self.db.member(member).last_prodded()
-                    now = datetime.utcnow()
-                    logger.debug(f"attempting to prod member {member.display_name}")         
-                    if last_prodded is not None:
-                        last_prodded = datetime.fromtimestamp(last_prodded)
-                        # member should be protected from being prodded for two days
-                        if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:
-                            logger.debug("member has been prodded too recently")
-                            continue
                     await self.prodMember(ctx, member)
-                    await self.db.member(member).last_prodded.set(now.timestamp())
-                    logger.debug("prodded member")
 
             # announce that the bot is done prodding members
             await log.send(f"\n\nCompleted prodding necessary members.")
@@ -222,4 +228,3 @@ class CSS(commands.Cog):
             return
 
         await self.properties["channels"].log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} ({member.name}#{member.discriminator}) has left the building.")
-        
