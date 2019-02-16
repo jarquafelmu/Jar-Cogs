@@ -180,7 +180,7 @@ class CSS(commands.Cog):
 
         if confirmed:
             # build list of members without roles
-            membersWithoutRoles = [member for member in ctx.properties["guild"].members if len(member.roles) < 2]
+            membersWithoutRoles = [member for member in ctx.guild.members if len(member.roles) < 2]
 
             log = self.properties["channels"].log
 
