@@ -87,7 +87,7 @@ class CSS(commands.Cog):
         logger.debug(f"attempting to prod member {member.display_name}")         
         if last_prodded is not None:
             last_prodded = datetime.fromtimestamp(last_prodded)
-            # member should be protected from being prodded for two days
+            # member should be protected from being prodded for a set amount of time
             if last_prodded + timedelta(days=self.properties["prod_protection_days"]) > now:                
                 return logger.debug("member has been prodded too recently")
 
