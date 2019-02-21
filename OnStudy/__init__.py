@@ -8,7 +8,7 @@ from .rolehandler import RoleHandler
 
 async def setup(bot):
     args = {
-        "guild": bot.get_guild(481613220550017036),
+        "guild_id": 481613220550017036,
         "channels": OSChannels(bot),
         "logic": Logic(bot)
     }

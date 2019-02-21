@@ -24,13 +24,13 @@ class Courses(commands.Cog):
         self.bot = bot
         self.roles = args["roles"]
         self.logic = args["logic"]
-        self.guild = args["guild"]
+        self.guild_id = args["guild_id"]
         self.channels = args["channels"]
 
         self.db = Config.get_conf(self, identifier=8748107325)
         self.course_list = self.bot.get_channel(514518408122073116)
         self.emoji = "\N{WHITE HEAVY CHECK MARK}"
-        self.utility_roles["staff"]["ref"] = self.guild.get_role(
+        self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(
             self.utility_roles["staff"]["id"]
         )
 
@@ -87,7 +87,7 @@ class Courses(commands.Cog):
         Creates a course channel group if it doesn't already exists
         """
         # this point on needs to be updated
-        for course_category in self.guild.categories:
+        for course_category in self.bot.get_guild(self.guild_id).categories:
             if course_category.name.lower() == course_role.name.lower():
                 logger.info(f"Skipping channel creation for {course_role.name} as it already exists.")
                 return course_category
@@ -95,18 +95,18 @@ class Courses(commands.Cog):
         logger.info(f"Creating channel for {course_role.name}.")
         # sets permissions for role objects
         overwrites = {
-            self.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            self.bot.get_guild(self.guild_id).default_role: discord.PermissionOverwrite(read_messages=False),
             course_role: discord.PermissionOverwrite(read_messages=True),
             self.utility_roles["staff"]["ref"]: discord.PermissionOverwrite(read_messages=True)
         }
 
         # create the category
-        course_category = await self.guild.create_category(name=f"{course_role.name.upper()}", overwrites=overwrites)
+        course_category = await self.bot.get_guild(self.guild_id).create_category(name=f"{course_role.name.upper()}", overwrites=overwrites)
         # create the general chat for the course
-        await self.guild.create_text_channel(name=course_role.name, category=course_category)
+        await self.bot.get_guild(self.guild_id).create_text_channel(name=course_role.name, category=course_category)
         # create any requested section channels
         for i in range(1, sections_num):
-            await self.guild.create_text_channel(name=f"section-00{i}", category=course_category)
+            await self.bot.get_guild(self.guild_id).create_text_channel(name=f"section-00{i}", category=course_category)
         # create the voice channels
         voice_channel_name = re.sub(
             r"^[A-Za-z]+(?P<courseNum>[\d]+)$",
@@ -114,8 +114,8 @@ class Courses(commands.Cog):
             course_role.name
         )
 
-        await self.guild.create_voice_channel(name=f"{voice_channel_name}-gen", category=course_category)
-        await self.guild.create_voice_channel(name=f"{voice_channel_name}-school", category=course_category)
+        await self.bot.get_guild(self.guild_id).create_voice_channel(name=f"{voice_channel_name}-gen", category=course_category)
+        await self.bot.get_guild(self.guild_id).create_voice_channel(name=f"{voice_channel_name}-school", category=course_category)
 
         return course_category
 
@@ -130,8 +130,8 @@ class Courses(commands.Cog):
         if not section_number:
             return
 
-        parent_course = self.guild.get_channel(ctx.channel.category_id)
-        channel = await self.guild.create_text_channel(name=f"section-{section_number}", category=parent_course)
+        parent_course = self.bot.get_guild(self.guild_id).get_channel(ctx.channel.category_id)
+        channel = await self.bot.get_guild(self.guild_id).create_text_channel(name=f"section-{section_number}", category=parent_course)
 
         if topic:
             await channel.edit(topic=topic)
@@ -179,7 +179,7 @@ class Courses(commands.Cog):
         """
         Removes the category and it's children that matches the 'category_id' from the server.
         """
-        category = self.guild.get_channel(category_id)
+        category = self.bot.get_guild(self.guild_id).get_channel(category_id)
         if category is None:
             return logger.error("category is empty.")
 
@@ -193,7 +193,7 @@ class Courses(commands.Cog):
         """
         Removes the role that matches the 'role_id' from the server.
         """
-        role = self.guild.get_role(role_id)
+        role = self.bot.get_guild(self.guild_id).get_role(role_id)
         if role is None:
             return logger.error("role is empty.")
 
@@ -217,7 +217,7 @@ class Courses(commands.Cog):
         """
         course_role_found = None
         # get the role from the list of server roles
-        for guild_role in self.guild.roles:
+        for guild_role in self.bot.get_guild(self.guild_id).roles:
             if (guild_role.name == course_role_name):
                 course_role_found = guild_role
                 break
@@ -336,7 +336,7 @@ class Courses(commands.Cog):
 
         start_index = 4
 
-        category_list = self.guild.categories[start_index:]
+        category_list = self.bot.get_guild(self.guild_id).categories[start_index:]
 
         def take_name(elem):
             return elem.name.upper()
@@ -393,7 +393,7 @@ class Courses(commands.Cog):
             if str(react.emoji) == self.emoji:
                 has_bot_reacted = False
                 async for user in react.users():
-                    if user.bot and user == self.guild.me:
+                    if user.bot and user == self.bot.get_guild(self.guild_id).me:
                         has_bot_reacted = True
                         continue
                     await self.process_course_assignment_from_call(react, user)
@@ -502,7 +502,7 @@ class Courses(commands.Cog):
             return logger.debug("incorrect emoji")
 
         # get the dict courses from the db
-        courses = await self.db.guild(self.guild).get_raw("registered_courses")
+        courses = await self.db.guild(self.bot.get_guild(self.guild_id)).get_raw("registered_courses")
 
         # default course to None so that we know for sure if we found something
         course = None
@@ -520,8 +520,8 @@ class Courses(commands.Cog):
             return
 
         # get the role from the guild that matches the course
-        role = self.guild.get_role(course["role_id"])
-
+        role = self.bot.get_guild(self.guild_id).get_role(course["role_id"])
+        
         # update the status of the role for the member
         await self.roles.update_member(member, role, add)
         
@@ -538,12 +538,13 @@ class Courses(commands.Cog):
         Handles the processing of the reaction from a trigger.
         """
         # get the member from the guild using the user_id in the payload
-        member = self.guild.get_member(payload.user_id)
+        member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
         if member is None:
-            logger.debug(f"user_id: {payload.user_id}")
-            await self.channels.log.send(error(
+            error_msg = (
                 f"Unable to add user with id #{payload.user_id} to their requested "
                 "course as they were not found to be a member of the guild."
-            ))
+            )
+            logger.error(error_msg)            
+            return await self.channels.log.send(error(error_msg))
         await self.process_course_assignment(member, payload.emoji, payload.message_id, add)
         

@@ -15,11 +15,8 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(logging.INFO)
 consoleHandler.setFormatter(formatter)
 
-# add the handlers to the log
-print('adding handler-')
 # allows to add only one instance of file handler and stream handler
 if logger.handlers:
-    print('making sure we do not add duplicate handlers')
     for handler in logger.handlers:
         # add the handlers to the log
         # makes sure no duplicate handlers are added

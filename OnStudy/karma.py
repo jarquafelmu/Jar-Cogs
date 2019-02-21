@@ -12,7 +12,6 @@ class Karma(commands.Cog):
     """
     thumbs_up_emoji = "\N{Thumbs Up Sign}"
     properties = {
-        "guild": None,
         "channels": None,
         "logic": None,
         "karma_per_vote": 1
@@ -31,7 +30,7 @@ class Karma(commands.Cog):
     def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.properties["guild"] = args["guild"]
+        self.guild_id = args["guild_id"]
         self.properties["channels"] = args["channels"]
         self.properties["logic"] = args["logic"]
     
@@ -124,7 +123,7 @@ class Karma(commands.Cog):
                 logger.exception("Editing sync heartbeat message failed.")
 
         # get the list of channels
-        channels = self.properties["guild"].text_channels
+        channels = self.bot.get_guild(self.guild_id).text_channels
         channels_processed = 0
 
         # annouce how many channels are to be processed
@@ -228,8 +227,8 @@ class Karma(commands.Cog):
             member_giving = payload["sender"]
         else:
             # get the member from the guild using the user_id in the payload
-            member_giving = self.properties["guild"].get_member(payload.user_id)
-            channel = self.properties["guild"].get_channel(payload.channel_id)
+            member_giving = self.bot.get_guild(self.guild_id).get_member(payload.user_id)
+            channel = self.bot.get_guild(self.guild_id).get_channel(payload.channel_id)
             message = await channel.get_message(payload.message_id)
             member_receiving = message.author        
 

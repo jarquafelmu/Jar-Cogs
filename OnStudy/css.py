@@ -26,7 +26,6 @@ class CSS(commands.Cog):
 
     properties = {
         "prod_protection_days": 2,
-        "guild": None,
         "channels": None,
         "logic": None
     }
@@ -34,7 +33,7 @@ class CSS(commands.Cog):
     def __init__(self, bot, args):
         """Initialization function"""
         self.bot = bot
-        self.properties["guild"] = args["guild"]
+        self.guild_id = args["guild_id"]
         self.properties["channels"] = args["channels"]
         self.properties["logic"] = args["logic"]
         self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
@@ -43,8 +42,8 @@ class CSS(commands.Cog):
         }
         self.db.register_member(**default_member)
 
-        self.utility_roles["admin"]["ref"] = self.properties["guild"].get_role(self.utility_roles["admin"]["id"])
-        self.utility_roles["staff"]["ref"] = self.properties["guild"].get_role(self.utility_roles["staff"]["id"])
+        self.utility_roles["admin"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["admin"]["id"])
+        self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["staff"]["id"])
 
     async def pastGreet(self, ctx=None):
         """
@@ -57,7 +56,7 @@ class CSS(commands.Cog):
         # `recentlyJoinedMembers` exit as soon as there is message from the bot found
         async for message in self.properties["channels"].newMembers.history(limit=messageLimit):
             if not message.author.bot:
-                if message.author.properties["guild"] == self.properties["guild"] and message.type == discord.MessageType.new_member:
+                if message.author.properties["guild"] == self.bot.get_guild(self.guild_id) and message.type == discord.MessageType.new_member:
                     recentlyJoinedMembers.append(message)
             else:
                 break
@@ -216,7 +215,7 @@ class CSS(commands.Cog):
         """
 
         # we only want to announce if this is the right server
-        if member.guild != self.properties["guild"]:
+        if member.guild != self.bot.get_guild(self.guild_id):
             return
 
         await self.welcome(self.properties["channels"].newMembers, member)
@@ -227,7 +226,7 @@ class CSS(commands.Cog):
         event happens when a member leaves the server
         """
         # we only want to announce if this is the right server
-        if member.guild != self.properties["guild"]:
+        if member.guild != self.bot.get_guild(self.guild_id):
             return
 
         await self.properties["channels"].log.send(f"<@&{self.utility_roles['admin']['id']}>: {member.display_name} ({member.name}#{member.discriminator}) has left the building.")

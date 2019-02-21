@@ -11,15 +11,13 @@ class RoleHandler(commands.Cog):
         """
         self.bot = bot
         self.logic = args["logic"]
-        self.guild = args["guild"]
-        
+        self.channels = args["channels"]    
 
     def getRolesForUser(self, user: discord.Member = None):
         """
         Gets a list of the roles assigned to the user,
         omitting the '@everyone' role
         """
-
         if user is None:
             return []
 
@@ -80,6 +78,9 @@ class RoleHandler(commands.Cog):
             await member.add_roles(role)
         else:
             await member.remove_roles(role)
-
-        logger.debug(f"{'Added' if add else 'Removed'} role: {role.name} to member: {member.name}")
+        debug_msg = (
+            f"{'Added' if add else 'Removed'} role: `{role.name}` to member: `{member.name}`"
+        )
+        logger.debug(debug_msg)
+        await self.channels.log.send(debug_msg)
         
