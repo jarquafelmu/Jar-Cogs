@@ -1,5 +1,5 @@
 from redbot.core import Config, commands, checks
-from redbot.core.utils.chat_formatting import error
+from redbot.core.utils.chat_formatting import error, info, warning
 from redbot.core.utils.predicates import MessagePredicate
 from redbot.core.utils.embed import randomize_color
 from .logger import logger
@@ -57,7 +57,7 @@ class Karma(commands.Cog):
         pass
         
     @_karma.command(name="check", aliases=["c"])
-    async def _check_user_karma(self, ctx, member: discord.Member):
+    async def _check_user_karma(self, ctx, member):
         """
         Displays a user's karma score.
         """
@@ -67,10 +67,17 @@ class Karma(commands.Cog):
         else:
             await ctx.send(error("Member wasn't found."))
 
-    async def build_karma_view(self, ctx, member: discord.Member):
+    async def build_karma_view(self, ctx, member):
         """
         Displays a user's karma score.
         """
+        if not isinstance(member, discord.Member):
+            member = self.bot.get_guild(self.guild_id).get_member(int(member))
+            if member is None:
+                return await ctx.send(warning(
+                    "User not found."
+                ))
+
         def build_field(group):
             return (
                 f"**Current:** {group['current']}\n"
@@ -133,13 +140,28 @@ class Karma(commands.Cog):
         latest_channel_msgObj = None
         async with ctx.channel.typing():
             # iterate through each channel:
-            for channel in channels:                
+            for channel in channels:
+                if channel.id in self.properties["channels"].ids.values():
+                    logger.info(f"Skipping channel {channel.name} during karma sync.")
+                    continue
+
+                endorsements = 0     
+                msg_count = 0
                 # iterate through the message history
-                async for message in channel.history():
+                async for message in channel.history(limit=None):
+                    msg_count += 1
                     # process the reactions for the karma one
                     payload = {}
-                    if message.author.bot or not self.properties["logic"].validate_member(message.author):
+                    if message.author.bot:
                         continue
+                    if not self.properties["logic"].validate_member(message.author):
+                        await self.properties["channels"].log.send(error(
+                                    f"Skipped author {message.author.display_name} for message "
+                                    f"{message.id} in channel {channel.name} as "
+                                    "this user is not a valid member."
+                            ))
+                        continue
+
                     payload["recipient"] = message.author                        
                     for react in message.reactions:
                         if (str(react.emoji) != self.thumbs_up_emoji):
@@ -149,13 +171,23 @@ class Karma(commands.Cog):
 
                         async for user in react.users():
                             if not self.properties["logic"].validate_member(user):
+                                await self.properties["channels"].log.send(error(
+                                    f"Skipped user {user.display_name} for message "
+                                    f"{message.id} in channel {channel.name} as "
+                                    "this user is not a valid member."
+                                    ))
                                 continue
 
                             # we have a user who is a valid member of the guild
                             payload["sender"] = user
 
+                            await self.properties["channels"].log.send(
+                                f"Endorsement to `{payload['recipient'].display_name}` from `{payload['sender'].display_name}`"
+                            )
+
                             # apply the normal rules for adding karma
                             await self.process_reaction(payload=payload)
+                            endorsements += 1
 
                 # announce channel is done
                 latest_channel = lambda channel: f"Processed channel: {channel}."
@@ -164,8 +196,14 @@ class Karma(commands.Cog):
                 else:                    
                     await status_msg(ctx, latest_channel(channel.name), msgObj = latest_channel_msgObj)
                 logger.debug(latest_channel(channel.name))
+
+                await ctx.send(info(
+                    f"**__{channel.name}:__**\n"
+                    f"messages: {msg_count}\n"
+                    f"endorsements: {endorsements}"
+                ))
                 
-                channels_processed = channels_processed + 1
+                channels_processed += 1
 
                 # edit channel processed message to update the completed number
                 await status_msg(ctx, channels_processed_msg(channels_processed, len(channels)), msgObj=processedMsgObj)
