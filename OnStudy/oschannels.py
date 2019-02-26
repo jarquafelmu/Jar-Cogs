@@ -6,14 +6,18 @@ class OSChannels(commands.Cog):
     Enum for channels to make it simplier to access them when needed
     """    
     __channel_ids = {        
+        "bot-commands": 484369915793637378,
+        "bot-log": 485218362272645120,
         "courseList": 514518408122073116,
         "log": 485218362272645120,
         "newMembers": 484378858968055814,
+        "warnings": 492816618808934410,
         "welcome": 514572072794587136
     }
 
     def __init__(self, bot):
         self.bot = bot
+        self.ids = self.__channel_ids
         
         # channels
         self.__channel_courseList = None
