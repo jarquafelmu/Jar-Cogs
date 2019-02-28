@@ -52,12 +52,14 @@ class Karma(commands.Cog):
     @commands.group(name="karma", aliases=["k", "Karma"])
     async def _karma(self, ctx):
         """
-        A group of commands for the karma cog. Leave blank to check your own karma.
+        A group of commands for the karma cog.
         """
+        # if ctx.invoked_subcommand is None:
+        #     await self.build_karma_view(ctx, ctx.author)
         pass
         
     @_karma.command(name="check", aliases=["c"])
-    async def _check_user_karma(self, ctx, member):
+    async def _check_user_karma(self, ctx, member: discord.Member):
         """
         Displays a user's karma score.
         """
@@ -67,16 +69,24 @@ class Karma(commands.Cog):
         else:
             await ctx.send(error("Member wasn't found."))
 
-    async def build_karma_view(self, ctx, member):
+
+    async def build_karma_view(self, ctx, member: discord.Member):
         """
         Displays a user's karma score.
         """
         if not isinstance(member, discord.Member):
-            member = self.bot.get_guild(self.guild_id).get_member(int(member))
-            if member is None:
-                return await ctx.send(warning(
-                    "User not found."
-                ))
+            try:
+                member = self.bot.get_guild(self.guild_id).get_member(int(member))
+            except ValueError:
+                msg = f"{member} is not a valid member id."
+                logger.exception(msg)
+                await ctx.send(warning("Oops, Something went wrong. Ask an **admin** or **bot-dev** to check the log."))
+                return await self.properties["channels"].log.send(error(msg))        
+        
+        if member is None:
+            return await ctx.send(warning(
+                "User not found."
+            ))
 
         def build_field(group):
             return (
