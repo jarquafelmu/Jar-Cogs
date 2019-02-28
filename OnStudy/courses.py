@@ -334,7 +334,7 @@ class Courses(commands.Cog):
         """
         await ctx.send("Sorting courses.")
 
-        start_index = 4
+        start_index = 5
 
         category_list = self.bot.get_guild(self.guild_id).categories[start_index:]
 
@@ -358,7 +358,7 @@ class Courses(commands.Cog):
                     logger.exception(f"Failed to edit category {category.name}")
                     await ctx.send(error(f"Failed to edit category {category.name}"))
 
-        await ctx.send("Done.")
+        await ctx.send("Done Sorting.")
 
         
 
