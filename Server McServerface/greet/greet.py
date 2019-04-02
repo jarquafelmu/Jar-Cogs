@@ -3,16 +3,14 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 import discord
 
-
 class Greet(commands.Cog):
     """My custom cog"""
-
+ 
     guild_id = 493875452046475275
     
     def __init__(self, bot):
         self.bot = bot
-        self.channels = self.Channels(bot)
-        self.guild = self.bot.get_guild(self.guild_id)
+        self.channels = self.Channels(bot)   
 
     class Channels:
         """Collection of channels and their ids on the server"""
@@ -25,6 +23,7 @@ class Greet(commands.Cog):
         server_orientation_id = 508391802940817415
         u18_id = 494210029294059520
         incident_id = 494210087217266688
+        welcome_id = 513855964294938624
 
         @property
         def newMembers(self):
@@ -35,12 +34,15 @@ class Greet(commands.Cog):
         def rules(self):
             """Server Rules channel object"""
             return self.bot.get_channel(self.rules_id)
+        
+        @property
+        def welcome(self):
+            """Server Rules channel object"""
+            return self.bot.get_channel(self.welcome_id)
 
         def anchor(self, channel):
             """Formats the channel for embedding in a string"""
             return f"<#{channel}>"
-    
-
         
     @commands.command()
     @checks.mod()
@@ -51,18 +53,14 @@ class Greet(commands.Cog):
 
         await self.welcome(ctx, user)
         
-        
-        
     async def greetMember(self, member):
-        """Greets members when they join"""
-        
-        if member.bot or member.guild.id != self.guild.id:
+        """
+        Greets members when they join
+        """        
+        if member.bot or member.guild.id != self.guild_id:
             # don't greet bots
-            return
-        
+            return        
         await self.welcome(self.channels.newMembers, member)
-    
-    
     
     async def pastGreet(self, ctx=None):
         """Greets members that joined the server while the bot was unavailable"""
@@ -95,8 +93,6 @@ class Greet(commands.Cog):
         #  for message in recentlyJoinedMembers:
         await self.welcome(self.channels.newMembers, members)
         
-        
-        
     async def welcome(self, channel=None, members=None):
         """Helper function to handle the welcoming of a user"""
 
@@ -121,6 +117,6 @@ class Greet(commands.Cog):
         await channel.send(
             f"Welcome {greetMembers}!\n"
             "Please take a moment to check out "
-            f"{self.channels.anchor(self.channels.rules_id)} and {self.channels.anchor(self.channels.server_orientation_id)}.\n"
-            "Once you accept the rules, by denoting as specified, you will be automatically given the reader role."
+            f"{self.channels.anchor(self.channels.welcome_id)}.\n"
+            "Following the instructions in there will allow you to gain full access to the server."
         )
