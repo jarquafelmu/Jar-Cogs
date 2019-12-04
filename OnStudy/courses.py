@@ -475,18 +475,21 @@ class Courses(commands.Cog):
         except discord.HTTPException:
             logger.exception(f"There was an issue with the webserver.")
         
-
-    async def on_raw_reaction_add(self, payload):
+    @commands.Cog.listener("on_raw_reaction_add")
+    async def reaction_added(self, payload):
         """
         Member agrees to the rules.
         """
+        logger.debug("Saw the reaction add")
         await self.process_course_assignment_from_trigger(payload, add=True)
         
 
-    async def on_raw_reaction_remove(self, payload):
+    @commands.Cog.listener("on_raw_reaction_remove")
+    async def reaction_removed(self, payload):
         """
         Member no longer agrees to the rules.
         """
+        logger.debug("Saw the reaction remove")
         await self.process_course_assignment_from_trigger(payload, add=False)
         
 
