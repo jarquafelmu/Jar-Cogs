@@ -209,7 +209,8 @@ class CSS(commands.Cog):
         await self.pastGreet()
 
     # event triggers
-    async def on_member_join(self, member):
+    @commands.Cog.listener("on_member_join")
+    async def member_joins_server(self, member):
         """
         Welcome's a new user to the server
         """
@@ -221,7 +222,8 @@ class CSS(commands.Cog):
         await self.welcome(self.properties["channels"].newMembers, member)
         
 
-    async def on_member_remove(self, member):
+    @commands.Cog.listener("on_member_remove")
+    async def member_leaves_server(self, member):
         """
         event happens when a member leaves the server
         """
