@@ -55,8 +55,9 @@ class CSS(commands.Cog):
         # scan through the `messageLimit` most recent messages, add any new member announcment to the list of
         # `recentlyJoinedMembers` exit as soon as there is message from the bot found
         async for message in self.properties["channels"].newMembers.history(limit=messageLimit):
-            if not message.author.bot:
-                if message.author.guild == self.bot.get_guild(self.guild_id) and message.type == discord.MessageType.new_member:
+            member = message.author
+            if not member.bot and self.properties["logic"].validate_member(member):
+                if member.guild == self.bot.get_guild(self.guild_id) and message.type == discord.MessageType.new_member:
                     recentlyJoinedMembers.append(message)
             else:
                 break
@@ -113,11 +114,6 @@ class CSS(commands.Cog):
         """
         Helper function to handle the welcoming of a user
         """
-
-        # We don't want to do anything if we don't have a channel or any members
-        if channel is None or members is None:
-            return
-
         # if members isn't already a list, then make it one
         if not isinstance(members, list):
             members = [members]
