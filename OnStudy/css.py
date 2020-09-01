@@ -2,6 +2,8 @@ import contextlib
 from datetime import datetime, timedelta
 
 import discord
+import asyncio
+
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
@@ -34,6 +36,7 @@ class CSS(commands.Cog):
         """Initialization function"""
         self.bot = bot
         self.guild_id = args["guild_id"]
+        # self.utilty = args["utility"]
         self.properties["channels"] = args["channels"]
         self.properties["logic"] = args["logic"]
         self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
@@ -42,8 +45,9 @@ class CSS(commands.Cog):
         }
         self.db.register_member(**default_member)
 
-        self.utility_roles["admin"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["admin"]["id"])
-        self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["staff"]["id"])
+        # await self.bot.wait_until_ready()
+        # self.utility_roles["admin"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["admin"]["id"])
+        # self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(self.utility_roles["staff"]["id"])
 
     async def pastGreet(self, ctx=None):
         """
@@ -65,10 +69,10 @@ class CSS(commands.Cog):
         size = len(recentlyJoinedMembers)
         await self.properties["channels"].log.send(f"{size} new member{'s' if size != 1 else ''} greeted since I was last online.")
 
-        # if our list is empty then we don't want to do anything else
+        # if our list is empty then we don't need to do anything else
         if not recentlyJoinedMembers:
             return
-
+          
         members = [message.author for message in recentlyJoinedMembers]
 
         #  for message in recentlyJoinedMembers:
@@ -99,7 +103,7 @@ class CSS(commands.Cog):
                 f"You have been on the **{member.guild.name}** discord server for a bit but haven't signed up for any courses.\n\n"
                 "In order to get the most use out of the server you will need to do that so that you can see the groups for your courses.\n\n"
                 "Don't reply to this message as this is just a bot.\n"
-                f"Instead visit server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
+                f"Instead visit the server and grab your courses in the **#{self.properties['channels'].courseList.name}** channel. Hope to see you soon."
             )
 
         await self.db.member(member).last_prodded.set(now.timestamp())
@@ -109,11 +113,14 @@ class CSS(commands.Cog):
 
         return True
         
-
     async def welcome(self, channel=None, members=None):
         """
         Helper function to handle the welcoming of a user
         """
+        # We don't want to do anything if we don't have a channel or any members
+        if channel is None or members is None:
+            return
+
         # if members isn't already a list, then make it one
         if not isinstance(members, list):
             members = [members]
@@ -198,11 +205,13 @@ class CSS(commands.Cog):
         
 
     # custom events
-    async def is_loaded(self):
-        """
-        Handles actions that are done when the bot is loaded and ready to work.
-        """
-        await self.pastGreet()
+    # async def is_loaded(self):
+    #     """
+    #     Handles actions that are done when the bot is loaded and ready to work.
+    #     """
+    #     # if not await self.utility.wait(): return
+    #     # await self.pastGreet()
+    #     task = asyncio.create_task(self.pastGreet())
 
     # event triggers
     @commands.Cog.listener("on_member_join")

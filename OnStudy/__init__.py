@@ -4,6 +4,7 @@ from .karma import Karma
 from .logic import Logic
 from .oschannels import OSChannels
 from .rolehandler import RoleHandler
+# from .utility import Utility
 
 
 async def setup(bot):
@@ -14,6 +15,10 @@ async def setup(bot):
     }
 
     args["roles"] = RoleHandler(bot, args)
+    
+    # cog = Utility(bot)
+    # bot.add_cog(cog)
+    # args["utility"] = cog
 
     # Karma cog stuff
     cog = Karma(bot, args)
@@ -27,4 +32,4 @@ async def setup(bot):
     cog = CSS(bot, args)
     bot.add_cog(cog)
     
-    await cog.is_loaded()
+    # await cog.is_loaded()

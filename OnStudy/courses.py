@@ -16,6 +16,13 @@ class Courses(commands.Cog):
             "ref": None
         }
     }
+    
+    restricted_courses = [
+      {
+        "id": None,
+        "name": None
+      }
+    ]
 
     def __init__(self, bot, args):
         """
@@ -26,19 +33,39 @@ class Courses(commands.Cog):
         self.logic = args["logic"]
         self.guild_id = args["guild_id"]
         self.channels = args["channels"]
+        # self.utility = args["utility"]
 
         self.db = Config.get_conf(self, identifier=8748107325)
-        self.course_list = self.bot.get_channel(514518408122073116)
+        # self.courseList = self.bot.get_channel(514518408122073116)
         self.emoji = "\N{WHITE HEAVY CHECK MARK}"
-        self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(
-            self.utility_roles["staff"]["id"]
-        )
+        
+        # await self.bot.wait_until_ready()
+        # self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(
+        #     self.utility_roles["staff"]["id"]
+        # )
 
         default_guild = {
             "registered_courses": {}
         }
 
         self.db.register_guild(**default_guild)
+
+    # Helper methods
+    async def getStaffRole(self):
+        """
+        Retrieves the staff role from the cache
+        """
+        staffRole = self.utility_roles["staff"]["ref"]
+
+        if staffRole is None:
+            staffRole = self.utility_roles["staff"]["ref"] = self.bot.get_guild(self.guild_id).get_role(
+                self.utility_roles["staff"]["id"]
+            )
+
+        if staffRole is None:
+            logger.error("Something went wrong. StaffRole is still None")        
+
+        return staffRole
         
 
     @commands.group(name="courses")
@@ -61,26 +88,30 @@ class Courses(commands.Cog):
 
     @_courses.command(name="create", aliases=["add"])
     @checks.admin()
-    async def _courses_create(self, ctx,
-                              role: str, *, sections_num: int = 0):
+    async def _courses_create(self, ctx, *, roles: str):
         """
         Creates a category based on the course name supplied.
 
         If the role for the course doesn't exist it will
         query to user if it should be created as well.
+
+        roles can be a single course or a string of space deliminated courses 
+        ex. "cs2003 cs2004 cs2005"
         """
-        if role == "":
+        if roles is None:
             return await ctx.send(error("Role cannot be blank"))
 
-        role = role.lower()
-
-        sections_num = max(sections_num, 0)
+        roles = roles.split(" ")
 
         # regisiter the course with the database
-        await self._courses_register(ctx, role, sort=True)
+        for role in roles:
+            await self._courses_register(ctx, role.lower(), sort=False)
+
+        # sort courses after all courses have been added
+        await ctx.invoke(self._courses_sort)
 
         await ctx.channel.send("Done.")
-        
+        pass        
 
     async def _course_create_channel(self, ctx, course_role, *, sections_num: int = 0):
         """
@@ -94,10 +125,11 @@ class Courses(commands.Cog):
 
         logger.info(f"Creating channel for {course_role.name}.")
         # sets permissions for role objects
+        staffRole = await self.getStaffRole()
         overwrites = {
             self.bot.get_guild(self.guild_id).default_role: discord.PermissionOverwrite(read_messages=False),
             course_role: discord.PermissionOverwrite(read_messages=True),
-            self.utility_roles["staff"]["ref"]: discord.PermissionOverwrite(read_messages=True)
+            staffRole: discord.PermissionOverwrite(read_messages=True)
         }
 
         # create the category
@@ -137,19 +169,19 @@ class Courses(commands.Cog):
             await channel.edit(topic=topic)
         
 
-    async def _courses_create_course_list_entry(self, ctx, course_role):
+    async def _courses_create_courseList_entry(self, ctx, course_role):
         """
         Creates the message and applies the emoji for the users click on
         """
 
         # check to make sure that the course isn't already in the course list
-        async for message in self.course_list.history():
+        async for message in self.channels.courseList.history():
             if message.content == course_role.name:
                 logger.warning(f"Skipping creation course list entry for {course_role.name} as it already exists.")
                 return message.id
 
         # create the course role message
-        message = await self.course_list.send(f"{course_role.name}")
+        message = await self.channels.courseList.send(f"{course_role.name}")
         await self.add_reaction_to_message(ctx, message, self.emoji)
 
         logger.info(f"Created course list entry for {course_role.name}")
@@ -171,7 +203,7 @@ class Courses(commands.Cog):
             course = courses.pop(str(msg_id), None)
             await self.remove_course_channel(course["category_id"])
             await self.remove_course_role(course["role_id"])
-            await self.remove_course_list_entry(msg_id)
+            await self.remove_courseList_entry(msg_id)
         await ctx.channel.send("Done.")
         
 
@@ -200,11 +232,11 @@ class Courses(commands.Cog):
         await role.delete()
         
 
-    async def remove_course_list_entry(self, msg_id):
+    async def remove_courseList_entry(self, msg_id):
         """
-        Removes the course list entry that matches the 'msg_id' from the course_list channel.
+        Removes the course list entry that matches the 'msg_id' from the courseList channel.
         """
-        msg = await self.course_list.get_message(msg_id)
+        msg = await self.channels.courseList.get_message(msg_id)
         if msg is None:
             return logger.error("msg is empty")
 
@@ -223,9 +255,9 @@ class Courses(commands.Cog):
                 break
         return course_role_found
 
-    async def _courses_register_from_course_listing(self, ctx, message: discord.Message, create_interaction: bool = False):
+    async def _courses_register_from_courseListing(self, ctx, message: discord.Message, create_interaction: bool = False):
         """
-        Registers a course from a course listing in the course_list channel.
+        Registers a course from a course listing in the courseList channel.
         """
         await self._courses_register(ctx, message.content, create_interaction=create_interaction, message_id=message.id)
 
@@ -243,12 +275,15 @@ class Courses(commands.Cog):
             new_role = await self.roles.create_role(ctx, role_name)
             if new_role is not None:
                 course_role = new_role
+        elif course_role is False:
+            await ctx.channel.send(f"Skipping course {role_name}")
+            pass
 
         course_channel = await self._course_create_channel(ctx, course_role, sections_num=sections_num)
 
         if create_interaction:
             # create the message that users will react to
-            message_id = await self._courses_create_course_list_entry(
+            message_id = await self._courses_create_courseList_entry(
                 ctx, course_role
             )
 
@@ -278,7 +313,7 @@ class Courses(commands.Cog):
         async with ctx.channel.typing():
             try:
                 await ctx.send("Removing member from courses.")
-                async for message in self.course_list.history():
+                async for message in self.channels.courseList.history():
                     await message.remove_reaction(self.emoji, member)
                 await ctx.send("Done.")
             except discord.Forbidden:
@@ -332,6 +367,11 @@ class Courses(commands.Cog):
         """
         Sorts the course channels in alphabetical order
         """
+        
+        # Goals:
+        # TODO: Add restricted list
+        # TODO: Remove restricted courses from the list of sortable courses
+        # TODO: Sort courses by name
         await ctx.send("Sorting courses.")
 
         start_index = 5
@@ -372,9 +412,9 @@ class Courses(commands.Cog):
         async with ctx.channel.typing():
             try:
                 await ctx.send("Syncing courses. This may take a while. Please be patient.")
-                async for message in self.course_list.history():
+                async for message in self.channels.courseList.history():
                     # syncs courses with the bot's database
-                    await self._courses_register_from_course_listing(ctx, message, create_interaction=False)
+                    await self._courses_register_from_courseListing(ctx, message, create_interaction=False)
 
                     # syncs users with the courses they have signed up for
                     await self._courses_sync_roles(ctx, message)
@@ -437,7 +477,7 @@ class Courses(commands.Cog):
                 roles_to_add.append(new_role)
 
                 # create channel group
-                self._courses_create(ctx, new_role.name)
+                self._courses_create(ctx, roles=new_role.name)
 
         if roles_to_add:
             await user.add_roles(*roles_to_add, reason=f"{ctx.message.author} requested it.")
