@@ -1,4 +1,4 @@
-# cogs-development
+# Jar-Cogs
 A place to create cogs for the Red Discordbot.    
     
 ### Contributing    
