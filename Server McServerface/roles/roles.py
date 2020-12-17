@@ -21,6 +21,20 @@ class RoleManager(commands.Cog):
         self.bot = bot
         self.log = self.bot.get_channel(self.log_id)
 
+        self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
+
+        default_member = {
+            "been_thanked": {
+                "total": 0,
+                "current": 0
+            },
+            "thanked_others": {
+                "total": 0,
+                "current": 0
+            }
+        }
+
+        self.db.register_member(**default_member)
         self.roles = {
             "reader": {
                 "id": 506657944860098561
