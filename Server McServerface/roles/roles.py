@@ -51,12 +51,14 @@ class RoleManager(commands.Cog):
         self.roles["reader"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["reader"]["id"])
         self.roles["author"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["author"]["id"])
 
+    @commands.Cog.listener("on_raw_reaction_add")
     async def on_raw_reaction_add(self, payload):
         """
         Member agrees to the rules
         """
         await self.process_reaction(payload, True)
 
+    @commands.Cog.listener("on_raw_reaction_remove")
     async def on_raw_reaction_remove(self, payload):
         """
         Member no longer agrees to the rules
