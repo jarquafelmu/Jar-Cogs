@@ -47,9 +47,12 @@ class RoleManager(commands.Cog):
             }
         }
 
-        self.roles["member"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["member"]["id"])
-        self.roles["reader"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["reader"]["id"])
-        self.roles["author"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["author"]["id"])
+        self.roles["member"]["obj"] = self.bot.get_guild(
+            self.guild_id).get_role(self.roles["member"]["id"])
+        self.roles["reader"]["obj"] = self.bot.get_guild(
+            self.guild_id).get_role(self.roles["reader"]["id"])
+        self.roles["author"]["obj"] = self.bot.get_guild(
+            self.guild_id).get_role(self.roles["author"]["id"])
 
     @commands.Cog.listener("on_raw_reaction_add")
     async def on_raw_reaction_add(self, payload):
