@@ -36,6 +36,9 @@ class RoleManager(commands.Cog):
 
         self.db.register_member(**default_member)
         self.roles = {
+            "member": {
+                "id": 567886671245475869
+            },
             "reader": {
                 "id": 506657944860098561
             },
@@ -44,6 +47,7 @@ class RoleManager(commands.Cog):
             }
         }
 
+        self.roles["member"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["member"]["id"])
         self.roles["reader"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["reader"]["id"])
         self.roles["author"]["obj"] = self.bot.get_guild(self.guild_id).get_role(self.roles["author"]["id"])
 
@@ -92,7 +96,7 @@ class RoleManager(commands.Cog):
                     "You have now been granted full access to the server."
                 )
                 action = "added"
-                await member.add_roles(self.roles["reader"]["obj"])
+                await member.add_roles(self.roles["member"]["obj"])
             else:
                 msg = (
                     f"It is unfortunate that you can no longer agree to the rules of {member.guild.name}.\n"
@@ -100,9 +104,9 @@ class RoleManager(commands.Cog):
                     "If you decide to agree to the rules in the future, your access will be restored."
                 )
                 action = "removed"
-                await member.remove_roles(self.roles["reader"]["obj"])
+                await member.remove_roles(self.roles["member"]["obj"])
 
-            await self.log.send(f"`{member.name}` {action} `reader` role.")
+            await self.log.send(f"`{member.name}` {action} `member` role.")
             with contextlib.suppress(discord.HTTPException):
                 # we don't want blocked DMs preventing the function working
                 await member.send(msg)
