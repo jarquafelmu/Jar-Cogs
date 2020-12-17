@@ -21,20 +21,15 @@ class RoleManager(commands.Cog):
         self.bot = bot
         self.log = self.bot.get_channel(self.log_id)
 
-        self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
+        self.db = Config.get_conf(
+            self, identifier=1712118358, force_registration=True)
 
-        default_member = {
-            "been_thanked": {
-                "total": 0,
-                "current": 0
-            },
-            "thanked_others": {
-                "total": 0,
-                "current": 0
-            }
+        default_guild = {
+            "reaction_roles": []
+        }
         }
 
-        self.db.register_member(**default_member)
+        self.db.register_guild(**default_guild)
         self.roles = {
             "member": {
                 "id": 567886671245475869
