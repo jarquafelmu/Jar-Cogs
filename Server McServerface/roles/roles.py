@@ -1,11 +1,13 @@
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import warning
+from redbot.core.utils.predicates import MessagePredicate
 
 import discord
 import contextlib
 
 # TODO: update for rules role and the others
 # TODO: Create tool where a role can be assigned to a reaction emoji from bot commands
+
 
 class RoleManager(commands.Cog):
     """Manages roles for Server McServerface"""
@@ -26,7 +28,6 @@ class RoleManager(commands.Cog):
 
         default_guild = {
             "reaction_roles": []
-        }
         }
 
         self.db.register_guild(**default_guild)
@@ -72,11 +73,7 @@ class RoleManager(commands.Cog):
         if member is None:
             return
 
-        print(payload.emoji)
-
         emoji = str(payload.emoji)
-
-        print(emoji)
 
         msg_id = payload.message_id
         if msg_id == self.msg_rule_agreement_id:
