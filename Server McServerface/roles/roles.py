@@ -1,4 +1,4 @@
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import warning
 
 import discord
