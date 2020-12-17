@@ -128,3 +128,69 @@ class RoleManager(commands.Cog):
             await self.log.send(f"`{member.name}` {action} `author` role.")
         else:
             await self.log.send(warning(f"`{member.name}` tried to add a role but used the wrong emoji."))
+
+    @commands.command(name="registerReactionRole")
+    async def registerRole(self, ctx):
+
+        pass
+
+    async def getRoleFromServer(self, role_id: str) -> str:
+        """
+        Gets a role from the server that matches the passed in id
+
+        Args:
+            role_id (str): The role to nab
+
+        Returns:
+            json: A reference to the role
+        """
+        return self.bot.get_guild(self.guild_id).get_role(role_id)
+
+    async def getReactionRoles(self, ctx):
+        """Gets the reaction roles from the database
+
+        Args:
+            ctx (obj): current context
+
+        Returns:
+            json: The reaction roles stored in the database
+        """
+        return await self.db.guild(ctx.guild).reaction_roles()
+
+    async def storeReactionRoles(self, ctx, roles):
+        """
+        Stores the reaction roles in the database
+
+        Args:
+            ctx (obj): current context
+            roles (json): A collection of reaction roles
+        """
+        await self.db.guild(ctx.guild).reaction_roles.set(roles)
+        pass
+
+        def createNewReactionRole(self, name: str, msg_id: str, role_id: str, emoji: str, emoji_name: str = ''):
+            """Creates a new reaction role object
+
+            Args:
+                name (str): The name of the this reaction role
+                msg_id (str): The id of the message that should be watched for reactions
+                role_id (str): The role to be given or removed
+                emoji (str): The triggering emoji
+                "emoji_name": The string name of the emoji [Optional]
+
+            Returns:
+                json: {
+                "name": str,
+                "msg_id": str,
+                "role_id": str,
+                "emoji": str,
+                "emoji_name": str
+            }
+            """
+            return {
+                "name": name,
+                "msg_id": msg_id,
+                "role_id": role_id,
+                "emoji": emoji,
+                "emoji_name": emoji_name
+            }
