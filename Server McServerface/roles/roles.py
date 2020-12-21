@@ -1,12 +1,5 @@
-from asyncio.windows_events import NULL
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import warning
+from redbot.core import commands
 
-import emoji
-import discord
-import contextlib
-
-# TODO: update for rules role and the others
 # TODO: Create tool where a role can be assigned to a reaction emoji from bot commands
 
 
@@ -16,7 +9,6 @@ class RoleManager(commands.Cog):
     guild_id = 493875452046475275
     log_id = 509041710651670548
     log_channel = None
-    role_to_test = "member"
     roles = {
         "member": {"id": 567886671245475869, "msg_id": 508393348067885066, "emoji": '👍'},
         "reader": {"id": 506657944860098561, "msg_id": 569318277612961822, "emoji": '📖'},
@@ -74,15 +66,12 @@ class RoleManager(commands.Cog):
         await self.log_channel.send(msg)
         pass
 
-    @commands.command(name="test_role")
-    async def changeRoleToBeTested(self, ctx, role):
-        previous_role = self.role_to_test
-        self.role_to_test = role
-        await ctx.channel.send(f"Changed testing role from {previous_role} to {self.role_to_test}")
-        await ctx.channel.send(f"Using emoji: {self.roles[self.role_to_test]['emoji']}")
-        pass
-
     def determine_role(self, reaction):
+        """Searches the roles dictionary for a role that fits this reaction
+
+        Args:
+            reaction (RawReactionActionEvent): The reaction from the server
+        """
         for (key, value) in self.roles.items():
             # value is a role property, key is the name of the role
             if (value["msg_id"] == reaction.message_id and value["emoji"] == str(reaction.emoji)):
