@@ -31,34 +31,37 @@ class RoleManager(commands.Cog):
         self.bot = bot
         pass
 
-    async def get_guild(self):
+    def get_guild(self):
         """Gets a discord guild reference
 
         Args:
             id (number): The guild id
         """
-        return await self.bot.fetch_guild(self.guild_id)
+        return self.bot.get_guild(self.guild_id)
 
-    async def get_channel(self, id):
+    def get_channel(self, id):
         """Gets a channel of the guild
 
         Args:
             id (number): The channel id
         """
-        guild = await self.get_guild()
-        return guild.get_channel(id)
+        return self.get_guild().get_channel(id)
 
-    async def get_role(self, id):
-        """[summary]
+    def get_role(self, id):
+        """Gets a role from the server
 
         Args:
-            id ([type]): [description]
-
-        Returns:
-            [type]: [description]
+            id (number): The role id
         """
-        guild = await self.get_guild()
-        return guild.get_role(id)
+        return self.get_guild().get_role(id)
+
+    def get_member(self, id):
+        """Gets a member from the server
+
+        Args:
+            id (number): The member id
+        """
+        return self.get_guild().get_member(id)
 
     async def log(self, msg):
         """Logs a message to the guild channel set up for logging
@@ -79,47 +82,36 @@ class RoleManager(commands.Cog):
         await ctx.channel.send(f"Using emoji: {self.roles[self.role_to_test]['emoji']}")
         pass
 
+    def determine_role(self, reaction):
+        for (key, value) in self.roles.items():
+            # value is a role property, key is the name of the role
+            if (value["msg_id"] == reaction.message_id and value["emoji"] == str(reaction.emoji)):
+                return (key, value)
+        return (None, None)
+
     @commands.Cog.listener("on_raw_reaction_add")
-    async def reaction_added(self, payload):
-        """
-        Member added a reaction to a messsage
-        """
-        await self.process_reaction(payload, True)
-        pass
-
     @commands.Cog.listener("on_raw_reaction_remove")
-    async def reaction_removed(self, payload):
-        """
-        Member removed a reaction from a messsage
-        """
-        await self.process_reaction(payload, False)
-        pass
-
-    async def process_reaction(self, reaction, add: bool):
+    async def process_reaction(self, reaction):
         """
         Handles the processing of the reaction
+
+        Args:
+            reaction (RawReactionActionEvent): The reaction sent from the server
+            add (bool): If True, adds a role to the user. Otherwise, removes a role from the user
         """
-        member = self.bot.get_guild(self.guild_id).get_member(reaction.user_id)
+        member = self.get_member(reaction.user_id)
 
         if member is None:
             return print("Member wasn't found in guild")
         # does this reaction come from a message that we are monitoring?
 
-        role = None
-        role_name = None
-
-        # iterate over roles
-        for (key, value) in self.roles.items():
-            # value is a role property, key is the name of the role
-            if (value["msg_id"] == reaction.message_id and value["emoji"] == str(reaction.emoji)):
-                role_name = key
-                role = value
+        (role_name, role) = self.determine_role(reaction)
 
         if role is None:
             return print("No role matched for this message and emoji")
 
-        role_obj = await self.get_role(role["id"])
-        if add:
+        role_obj = self.get_role(role["id"])
+        if reaction.event_type == "REACTION_ADD":
             action = "added"
             await member.add_roles(role_obj)
         else:
