@@ -1,135 +1,131 @@
+from asyncio.windows_events import NULL
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import warning
 
+import emoji
 import discord
 import contextlib
 
 # TODO: update for rules role and the others
 # TODO: Create tool where a role can be assigned to a reaction emoji from bot commands
 
+
 class RoleManager(commands.Cog):
     """Manages roles for Server McServerface"""
 
     guild_id = 493875452046475275
-
-    msg_rule_agreement_id = 508393348067885066
-    msg_author_id = 513857600152928279
-
     log_id = 509041710651670548
+    log_channel = None
+    role_to_test = "member"
+    roles = {
+        "member": {"id": 567886671245475869, "msg_id": 508393348067885066, "emoji": '👍'},
+        "reader": {"id": 506657944860098561, "msg_id": 569318277612961822, "emoji": '📖'},
+        "author": {"id": 506657837498368014, "msg_id": 569318277612961822, "emoji": '✏️'},
+        "beta_reader": {"id": 565022046279696396, "msg_id": 569318277612961822, "emoji": '👓'},
+        "editor": {"id": 564972131541188609, "msg_id": 569318277612961822, "emoji": '🖊️'},
+        "site_staff": {"id": 569281650802819074, "msg_id": 569318277612961822, "emoji": '💻'},
+        "artist": {"id": 578703388263317565, "msg_id": 569318277612961822, "emoji": '🖌️'}
+    }
 
     def __init__(self, bot):
         self.bot = bot
-        self.log = self.bot.get_channel(self.log_id)
+        pass
 
-        self.db = Config.get_conf(self, identifier=1742113358, force_registration=True)
+    async def get_guild(self):
+        """Gets a discord guild reference
 
-        default_member = {
-            "been_thanked": {
-                "total": 0,
-                "current": 0
-            },
-            "thanked_others": {
-                "total": 0,
-                "current": 0
-            }
-        }
+        Args:
+            id (number): The guild id
+        """
+        return await self.bot.fetch_guild(self.guild_id)
 
-        self.db.register_member(**default_member)
-        self.roles = {
-            "member": {
-                "id": 567886671245475869
-            },
-            "reader": {
-                "id": 506657944860098561
-            },
-            "author": {
-                "id": 506657837498368014
-            }
-        }
+    async def get_channel(self, id):
+        """Gets a channel of the guild
 
-        self.roles["member"]["obj"] = self.bot.get_guild(
-            self.guild_id).get_role(self.roles["member"]["id"])
-        self.roles["reader"]["obj"] = self.bot.get_guild(
-            self.guild_id).get_role(self.roles["reader"]["id"])
-        self.roles["author"]["obj"] = self.bot.get_guild(
-            self.guild_id).get_role(self.roles["author"]["id"])
+        Args:
+            id (number): The channel id
+        """
+        guild = await self.get_guild()
+        return guild.get_channel(id)
+
+    async def get_role(self, id):
+        """[summary]
+
+        Args:
+            id ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        guild = await self.get_guild()
+        return guild.get_role(id)
+
+    async def log(self, msg):
+        """Logs a message to the guild channel set up for logging
+
+        Args:
+            msg (str): the message to be sent
+        """
+        if not self.log_channel:
+            self.log_channel = self.bot.get_channel(self.log_id)
+        await self.log_channel.send(msg)
+        pass
+
+    @commands.command(name="test_role")
+    async def changeRoleToBeTested(self, ctx, role):
+        previous_role = self.role_to_test
+        self.role_to_test = role
+        await ctx.channel.send(f"Changed testing role from {previous_role} to {self.role_to_test}")
+        await ctx.channel.send(f"Using emoji: {self.roles[self.role_to_test]['emoji']}")
+        pass
 
     @commands.Cog.listener("on_raw_reaction_add")
-    async def on_raw_reaction_add(self, payload):
+    async def reaction_added(self, payload):
         """
-        Member agrees to the rules
+        Member added a reaction to a messsage
         """
         await self.process_reaction(payload, True)
+        pass
 
     @commands.Cog.listener("on_raw_reaction_remove")
-    async def on_raw_reaction_remove(self, payload):
+    async def reaction_removed(self, payload):
         """
-        Member no longer agrees to the rules
+        Member removed a reaction from a messsage
         """
         await self.process_reaction(payload, False)
+        pass
 
-    async def process_reaction(self, payload, add: bool):
+    async def process_reaction(self, reaction, add: bool):
         """
         Handles the processing of the reaction
         """
-        member = self.bot.get_guild(self.guild_id).get_member(payload.user_id)
+        member = self.bot.get_guild(self.guild_id).get_member(reaction.user_id)
 
         if member is None:
-            return
+            return print("Member wasn't found in guild")
+        # does this reaction come from a message that we are monitoring?
 
-        print(payload.emoji)
+        role = None
+        role_name = None
 
-        emoji = str(payload.emoji)
+        # iterate over roles
+        for (key, value) in self.roles.items():
+            # value is a role property, key is the name of the role
+            if (value["msg_id"] == reaction.message_id and value["emoji"] == str(reaction.emoji)):
+                role_name = key
+                role = value
 
-        print(emoji)
+        if role is None:
+            return print("No role matched for this message and emoji")
 
-        msg_id = payload.message_id
-        if msg_id == self.msg_rule_agreement_id:
-            await self.process_rule_agreement_reaction(member, emoji, add)
-        elif msg_id == self.msg_author_id:
-            await self.process_author_reaction(member, emoji, add)
-
-    async def process_rule_agreement_reaction(self, member: discord.Member, emoji: str, add: bool):
-        """
-        Handles the rule agreement reaction
-        """
-
-        if emoji.startswith("\N{THUMBS UP SIGN}"):
-            if add:
-                msg = (
-                    f"Thank you for agreeing to the rules of {member.guild.name}.\n"
-                    "You have now been granted full access to the server."
-                )
-                action = "added"
-                await member.add_roles(self.roles["member"]["obj"])
-            else:
-                msg = (
-                    f"It is unfortunate that you can no longer agree to the rules of {member.guild.name}.\n"
-                    "Your access to the server has been restricted.\n"
-                    "If you decide to agree to the rules in the future, your access will be restored."
-                )
-                action = "removed"
-                await member.remove_roles(self.roles["member"]["obj"])
-
-            await self.log.send(f"`{member.name}` {action} `member` role.")
-            with contextlib.suppress(discord.HTTPException):
-                # we don't want blocked DMs preventing the function working
-                await member.send(msg)
+        role_obj = await self.get_role(role["id"])
+        if add:
+            action = "added"
+            await member.add_roles(role_obj)
         else:
-            await self.log.send(warning(f"`{member.name}` tried to add a role but used the wrong emoji."))
+            action = "removed"
+            await member.remove_roles(role_obj)
 
-    async def process_author_reaction(self, member: discord.Member, emoji: str, add: bool):
-        """
-        Handles the rule agreement reaction
-        """
-
-        if emoji.startswith("\N{LOWER LEFT BALLPOINT PEN}"):
-            if add:
-                action = "added"
-                await member.add_roles(self.roles["author"]["obj"])
-            else:
-                action = "removed"
-                await member.remove_roles(self.roles["author"]["obj"])
-            await self.log.send(f"`{member.name}` {action} `author` role.")
-        else:
-            await self.log.send(warning(f"`{member.name}` tried to add a role but used the wrong emoji."))
+        await self.log(f"`{member.name}` {action} `{role_name} ({role['emoji']})` role.")
+        print(f"`{member.name}` {action} `{role_name}` role.")
+        pass
