@@ -86,11 +86,13 @@ class RoleManager(commands.Cog):
 
         Args:
             reaction (RawReactionActionEvent): The reaction sent from the server
+            add (bool): If True, adds a role to the user. Otherwise, removes a role from the user
         """
         member = self.get_member(reaction.user_id)
 
         if member is None:
             return print("Member wasn't found in guild")
+        # does this reaction come from a message that we are monitoring?
 
         (role_name, role) = self.determine_role(reaction)
 
