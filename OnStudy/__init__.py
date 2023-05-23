@@ -22,14 +22,14 @@ async def setup(bot):
 
     # Karma cog stuff
     cog = Karma(bot, args)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
 
     # Courses cog stuff
     cog = Courses(bot, args)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
 
     # CSS cog stuff
     cog = CSS(bot, args)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
     
     # await cog.is_loaded()

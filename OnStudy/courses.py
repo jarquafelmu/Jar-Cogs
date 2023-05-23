@@ -95,7 +95,7 @@ class Courses(commands.Cog):
         If the role for the course doesn't exist it will
         query to user if it should be created as well.
 
-        roles can be a single course or a string of space deliminated courses 
+        roles can be a single course or a string of space delimitated courses 
         ex. "cs2003 cs2004 cs2005"
         """
         if roles is None:
@@ -103,7 +103,7 @@ class Courses(commands.Cog):
 
         roles = roles.split(" ")
 
-        # regisiter the course with the database
+        # register the course with the database
         for role in roles:
             await self._courses_register(ctx, role.lower(), sort=False)
 
@@ -119,6 +119,8 @@ class Courses(commands.Cog):
         """
         # this point on needs to be updated
         for course_category in self.bot.get_guild(self.guild_id).categories:
+            # BUG: course_role is NoneType here but we shouldn't even be here.
+            # It could also be course_category that is NoneType
             if course_category.name.lower() == course_role.name.lower():
                 logger.info(f"Skipping channel creation for {course_role.name} as it already exists.")
                 return course_category
@@ -273,8 +275,11 @@ class Courses(commands.Cog):
 
         if course_role is None:
             new_role = await self.roles.create_role(ctx, role_name)
+            logger.info(f"new role `{new_role}`")
             if new_role is not None:
                 course_role = new_role
+            else:
+                return logger.info(f"Declined to create role `{role_name}`")
         elif course_role is False:
             await ctx.channel.send(f"Skipping course {role_name}")
             pass
@@ -413,6 +418,9 @@ class Courses(commands.Cog):
             try:
                 await ctx.send("Syncing courses. This may take a while. Please be patient.")
                 async for message in self.channels.courseList.history():
+                    if message.type != discord.MessageType.default:
+                        continue
+                    
                     # syncs courses with the bot's database
                     await self._courses_register_from_courseListing(ctx, message, create_interaction=False)
 

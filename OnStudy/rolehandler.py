@@ -30,6 +30,7 @@ class RoleHandler(commands.Cog):
         Otherwise, NoneType is returned.
         """
         createRole = await self.logic.confirm(ctx, msg=f"Role `{role_name}` does not exist. Would you like to create it?")
+        logger.info(f"createRole `{createRole}`")
         if (createRole):
             color = self.get_role_color()
             try:
