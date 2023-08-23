@@ -1,17 +1,22 @@
 from redbot.core import commands
 import discord
 from difflib import get_close_matches
-from disputils import BotMultipleChoice
+# from disputils import BotMultipleChoice
 
 class UserCommands(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
-        self.perm_num = 1071698665025
+        self.perm_num = 1071698529857
+        
+        # old permission number
+        # self.perm_num = 1071698665025
+        
 
     @commands.command(name="add")
     async def add(self, ctx, role: discord.Role):
         user = ctx.message.author
+        print(f"Role permission value: {role.permissions.value}")
         if role is None:
             await ctx.send(f'That role dose not exist {user.mention}')
         elif role.permissions.value != self.perm_num:
@@ -47,25 +52,27 @@ class UserCommands(commands.Cog):
         if not role_names:
             await ctx.send(f"Could not find any roles close to that name... {user.mention}")
             return None
-        if len(role_names) > 5:
-            del role_names[5:]
+        # return the closest 5 matches
+        MATCH_LIMIT = 5
+        if len(role_names) > MATCH_LIMIT:
+            del role_names[MATCH_LIMIT:]
 
 
-        multiple_choice = BotMultipleChoice(ctx, role_names, "Search Results:")
-        choice = await multiple_choice.run()
-        choice = choice[0]
-        if choice:
-            for i in roles:
-                if choice == i.name:
-                    choice = i
-                    break
-        else:
-            await multiple_choice.quit(f"Sorry you did not see the class you were looking for {user.mention}!")
-            return None
-        await multiple_choice.quit()
+        prettifiedRoles = '\n'.join(role_names)
+        await ctx.send(f"Here are the roles I found close to that name {user.mention}:\n{prettifiedRoles}")
+        # TODO: Needs to be rebuilt to no longer use disputils
+        # multiple_choice = BotMultipleChoice(ctx, role_names, "Search Results:")
+        # choice = await multiple_choice.run()
+        # choice = choice[0]
+        # if choice:
+        #     for i in roles:
+        #         if choice == i.name:
+        #             choice = i
+        #             break
+        # else:
+        #     await multiple_choice.quit(f"Sorry you did not see the class you were looking for {user.mention}!")
+        #     return None
+        # await multiple_choice.quit()
 
-        if choice:
-            await self.add(ctx, choice)
-
-def setup(bot):
-    bot.add_cog(UserCommands(bot))
+        # if choice:
+        #     await self.add(ctx, choice)
