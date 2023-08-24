@@ -1,52 +1,93 @@
 from redbot.core import commands
-import discord
 from difflib import get_close_matches
-# from disputils import BotMultipleChoice
+import discord
+import re
 
 class UserCommands(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
-        self.perm_num = 1071698529857
+        # users are only allowed to add courses themselves. All courses begin with letters and have numbers
+        # Some courses have letters after the numbers, so we need to account for that
+        self.courseRegexMatcher = r'[a-zA-Z]{2,}\d+([a-zA-Z]+)?'
         
         # old permission number
         # self.perm_num = 1071698665025
         
+    def isCourse(self, role: str) -> bool:
+        """Check if a role is a course."""
+        return re.match(self.courseRegexMatcher, role) is not None
+        
+    def getRoles(self, ctx, roles: list, user, adding: bool = True) -> list:
+        """Get a list of qualified roles from the guild. Any roles that do not exist or are not qualified will be skipped."""
+        retrievedRoles = []
+        for role in roles:
+            roleFromGuild = discord.utils.get(ctx.guild.roles, name=role)
+            
+            # If the role does not exist, skip it
+            if roleFromGuild is None:
+                continue
+            
+            # Only allow users to add or remove courses from themselves
+            if(self.isCourse(role) is False):
+                continue
+            
+            # prevent a role from being added that the user already has
+            if (adding and roleFromGuild in user.roles):
+                continue
 
-    @commands.command(name="add")
-    async def add(self, ctx, role: discord.Role):
+            # prevent a role from being removed that the user does not have
+            if (not adding and roleFromGuild not in user.roles):
+                continue
+            
+            retrievedRoles.append(roleFromGuild)
+        return retrievedRoles
+    
+    @commands.command()
+    async def add(self, ctx, *, roles: str):
+        """Add one or more roles to yourself.
+
+        Example: 
+        !add role1 role2 role3
+        !add role1
+        """
         user = ctx.message.author
-        print(f"Role permission value: {role.permissions.value}")
-        if role is None:
-            await ctx.send(f'That role dose not exist {user.mention}')
-        elif role.permissions.value != self.perm_num:
-            await ctx.send(f'You do not have permission to add this role')
-        elif role in user.roles:
-            await ctx.send(f"You cannot add a role you already have {user.mention}")
-        else:
-            user = ctx.message.author
+        role_list = self.getRoles(ctx, list(roles.split(" ")), user)
+        
+        for role in role_list: 
             await user.add_roles(role)
-            await ctx.send(f'Added {role} to {user.mention}')
-
-    @commands.command(name="remove")
-    async def remove(self, ctx, role) -> None:
-        role = discord.utils.get(ctx.guild.roles, name=role)
-        user = ctx.message.author
-        if role is None:
-            await ctx.send(f'That role dose not exist {user.mention}')
-        elif role.permissions.value != self.perm_num:
-            await ctx.send('You do not have permission to remove this role')
-        elif role not in user.roles:
-            await ctx.send(f"You cannot remove a role you don't have {user.mention}")
+            
+        if not role_list:
+            await ctx.send(f'Could not find any roles to add {user.mention}')
         else:
-            await user.remove_roles(role)
-            await ctx.send(f"Removed {role} from {user.mention}")
+            await ctx.send(f'Added {", ".join([role.name for role in role_list])} to {user.mention}')
 
-    @commands.command(name="search")
+    @commands.command()
+    async def remove(self, ctx, *, roles: str) -> None:
+        """Remove one or more roles from yourself.
+
+        Example: 
+        !remove role1 role2 role3
+        !remove role1
+        """        
+        user = ctx.message.author
+        role_list = self.getRoles(ctx, list(roles.split(" ")), user, False)
+        
+        for role in role_list: 
+            await user.remove_roles(role)
+            
+        if not role_list:
+            await ctx.send(f'Could not find any roles to remove {user.mention}')
+        else:
+            await ctx.send(f'Removed {", ".join([role.name for role in role_list])} to {user.mention}')
+
+    @commands.command()
     async def search(self, ctx, role):
+        """Search for a role by name. If there are multiple matches, you will be shown a list of the closest matches.
+        """
         user = ctx.message.author
         roles = ctx.guild.roles
-        roles = [i for i in roles if i.permissions.value == self.perm_num and i.name != '@everyone']
+        roles = [i for i in roles if self.isCourse(i.name) is True and i.name != '@everyone']
         role_names = get_close_matches(role, [i.name for i in roles])
 
         if not role_names:
