@@ -1,5 +1,6 @@
-from redbot.core import commands
+from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import pagify, bold
+import discord
 
 import logging
 
@@ -36,7 +37,7 @@ else:
     print('added handler for the first time')
 
 
-class RoleIds(commands.Cog):
+class RoleUtils(commands.Cog):
     """Retreives a list of server roles and their ids"""
 
     def __init__(self, bot):
@@ -58,3 +59,16 @@ class RoleIds(commands.Cog):
             await ctx.send(bold("Role Name: Role Id"))
             for page in pages:
                 await ctx.send(page)
+
+    @commands.command("roleperms")
+    @checks.admin()
+    async def getRolePermission(self, ctx, role):
+        """Returns the role permissions value for a given role
+        
+        Must be an admin to use this command
+        """
+        role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            await ctx.send(f"{role} role dose not exist")
+        else:
+            await ctx.send(f"{role} permissions value is {role.permissions.value}")
