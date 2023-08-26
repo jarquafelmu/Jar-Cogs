@@ -129,7 +129,7 @@ class UserCommands(commands.Cog):
         await self.remove(ctx.message.author, ctx.guild, roles, ctx=ctx)
 
     @app_commands.command(
-        name="remove", description="Add one or more roles to yourself"
+        name="remove", description="Remove one or more roles from yourself"
     )
     @app_commands.describe(
         roles="One or more courses to remove from yourself. For multiple courses, separate them with spaces"
@@ -194,7 +194,7 @@ class UserCommands(commands.Cog):
 
     @app_commands.command(
         name="search",
-        description="Searches for a course and returns a list of up to five matches",
+        description="Search for a course and returns a list of up to five matches",
     )
     @app_commands.describe(role="A course you wish to search for")
     @app_commands.rename(role="course")
